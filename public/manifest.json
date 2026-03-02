@@ -1,0 +1,25 @@
+{
+    "name": "CineTrack",
+    "short_name": "CineTrack",
+    "description": "Film ve dizi takip uygulaması",
+    "theme_color": "#7B5CF0",
+    "background_color": "#0D0D0F",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "start_url": "/",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "/icons/icon-192x192.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512x512.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
