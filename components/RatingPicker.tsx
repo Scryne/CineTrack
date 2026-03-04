@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addRating, getRating, removeRating } from "@/lib/storage";
+import { addRating, getRating, removeRating } from "@/lib/db";
+import toast from "react-hot-toast";
 
 interface RatingPickerProps {
     id: string;
@@ -17,24 +18,51 @@ export default function RatingPicker({ id, type, title, posterPath, onRatingChan
     const [showActions, setShowActions] = useState(false);
 
     useEffect(() => {
-        const saved = getRating(id, type);
-        setCurrentRating(saved);
-        setShowActions(saved !== null);
+        let isMounted = true;
+        async function fetchRating() {
+            try {
+                const saved = await getRating(id, type);
+                if (isMounted) {
+                    setCurrentRating(saved);
+                    setShowActions(saved !== null && saved > 0);
+                }
+            } catch {
+                // Rating yüklenemezse sessizce devam et
+                if (isMounted) {
+                    setCurrentRating(null);
+                    setShowActions(false);
+                }
+            }
+        }
+        fetchRating();
+        return () => { isMounted = false; };
     }, [id, type]);
 
-    const handleRate = (value: number) => {
-        addRating(id, type, value, title, posterPath);
-        setCurrentRating(value);
-        setShowActions(true);
-        onRatingChange?.(value);
+    const handleRate = async (value: number) => {
+        try {
+            await addRating(id, type, value, title, posterPath);
+            setCurrentRating(value);
+            setShowActions(true);
+            onRatingChange?.(value);
+            toast.success("Puan başarıyla kaydedildi.");
+        } catch (error: unknown) {
+            console.error('Puan kaydetme hatası:', error);
+            // Revert UI effectively
+            const message = error instanceof Error ? error.message : "Puan kaydedilemedi.";
+            toast.error("Hata: " + message);
+        }
     };
 
-    const handleRemove = () => {
-        removeRating(id, type);
-        setCurrentRating(null);
-        setHoverRating(null);
-        setShowActions(false);
-        onRatingChange?.(null);
+    const handleRemove = async () => {
+        try {
+            await removeRating(id, type);
+            setCurrentRating(null);
+            setHoverRating(null);
+            setShowActions(false);
+            onRatingChange?.(null);
+        } catch (error) {
+            console.error('Puan kaldırma hatası:', error);
+        }
     };
 
     const displayRating = hoverRating ?? currentRating;

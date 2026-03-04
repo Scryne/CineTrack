@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { posterUrl, BLUR_PLACEHOLDER } from "@/lib/tmdb";
-import { addToWatchlist, removeFromWatchlist, isInWatchlist, markAsWatched, removeFromWatched, isWatched } from "@/lib/storage";
+import { addToWatchlist, removeFromWatchlist, isInWatchlist, markAsWatched, removeFromWatched, isWatched } from "@/lib/db";
 import type { TMDBMovieResult } from "@/lib/tmdb";
 
 interface MovieCardProps {
@@ -14,22 +14,39 @@ interface MovieCardProps {
 
 export default function MovieCard({ movie }: MovieCardProps) {
     const movieId = movie.id.toString();
-    const [inWatchlist, setInWatchlist] = useState(() => isInWatchlist(movieId, "film"));
-    const [watched, setWatched] = useState(() => isWatched(movieId, "film"));
+    const [inWatchlist, setInWatchlist] = useState(false);
+    const [watched, setWatched] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchState() {
+            const [wl, w] = await Promise.all([
+                isInWatchlist(movieId, "film"),
+                isWatched(movieId, "film")
+            ]);
+            if (isMounted) {
+                setInWatchlist(wl);
+                setWatched(w);
+            }
+        }
+        fetchState();
+        return () => { isMounted = false; };
+    }, [movieId]);
     const [isHovered, setIsHovered] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     const year = movie.release_date?.split("-")[0] || "—";
     const rating = movie.vote_average?.toFixed(1) || "—";
     const poster = posterUrl(movie.poster_path);
 
-    const handleWatchlist = (e: React.MouseEvent) => {
+    const handleWatchlist = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         if (inWatchlist) {
-            removeFromWatchlist(movieId, "film");
+            await removeFromWatchlist(movieId, "film");
             setInWatchlist(false);
         } else {
-            addToWatchlist({
+            await addToWatchlist({
                 id: movieId,
                 type: "film",
                 title: movie.title,
@@ -40,14 +57,14 @@ export default function MovieCard({ movie }: MovieCardProps) {
         }
     };
 
-    const handleWatched = (e: React.MouseEvent) => {
+    const handleWatched = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         if (watched) {
-            removeFromWatched(movieId, "film");
+            await removeFromWatched(movieId, "film");
             setWatched(false);
         } else {
-            markAsWatched({
+            await markAsWatched({
                 id: movieId,
                 type: "film",
                 title: movie.title,
@@ -68,7 +85,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
             >
                 {/* Poster */}
                 <div className="relative w-[200px] h-[300px] bg-card">
-                    {movie.poster_path ? (
+                    {movie.poster_path && !imgError ? (
                         <Image
                             src={poster}
                             alt={movie.title}
@@ -77,6 +94,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
                             sizes="200px"
                             placeholder="blur"
                             blurDataURL={BLUR_PLACEHOLDER}
+                            onError={() => setImgError(true)}
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted text-sm">

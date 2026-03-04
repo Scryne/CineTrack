@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { posterUrl, BLUR_PLACEHOLDER, getSeriesDetail } from "@/lib/tmdb";
-import { addToWatchlist, removeFromWatchlist, isInWatchlist, markAsWatched, removeFromWatched, isWatched, markAllEpisodesWatched, removeAllEpisodesWatched } from "@/lib/storage";
+import { addToWatchlist, removeFromWatchlist, isInWatchlist, markAsWatched, removeFromWatched, isWatched, markAllEpisodesWatched, removeAllEpisodesWatched } from "@/lib/db";
 import type { TMDBSeriesResult } from "@/lib/tmdb";
 
 interface SeriesCardProps {
@@ -14,22 +14,40 @@ interface SeriesCardProps {
 
 export default function SeriesCard({ series }: SeriesCardProps) {
     const seriesId = series.id.toString();
-    const [inWatchlist, setInWatchlist] = useState(() => isInWatchlist(seriesId, "dizi"));
-    const [watched, setWatched] = useState(() => isWatched(seriesId, "dizi"));
+    const [inWatchlist, setInWatchlist] = useState(false);
+    const [watched, setWatched] = useState(false);
+
+    // Initial load
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchState() {
+            const [wl, w] = await Promise.all([
+                isInWatchlist(seriesId, "dizi"),
+                isWatched(seriesId, "dizi")
+            ]);
+            if (isMounted) {
+                setInWatchlist(wl);
+                setWatched(w);
+            }
+        }
+        fetchState();
+        return () => { isMounted = false; };
+    }, [seriesId]);
     const [isHovered, setIsHovered] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     const year = series.first_air_date?.split("-")[0] || "—";
     const rating = series.vote_average?.toFixed(1) || "—";
     const poster = posterUrl(series.poster_path);
 
-    const handleWatchlist = (e: React.MouseEvent) => {
+    const handleWatchlist = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         if (inWatchlist) {
-            removeFromWatchlist(seriesId, "dizi");
+            await removeFromWatchlist(seriesId, "dizi");
             setInWatchlist(false);
         } else {
-            addToWatchlist({
+            await addToWatchlist({
                 id: seriesId,
                 type: "dizi",
                 title: series.name,
@@ -44,11 +62,11 @@ export default function SeriesCard({ series }: SeriesCardProps) {
         e.preventDefault();
         e.stopPropagation();
         if (watched) {
-            removeFromWatched(seriesId, "dizi");
-            removeAllEpisodesWatched(seriesId);
+            await removeFromWatched(seriesId, "dizi");
+            await removeAllEpisodesWatched(seriesId);
             setWatched(false);
         } else {
-            markAsWatched({
+            await markAsWatched({
                 id: seriesId,
                 type: "dizi",
                 title: series.name,
@@ -77,7 +95,7 @@ export default function SeriesCard({ series }: SeriesCardProps) {
             >
                 {/* Poster */}
                 <div className="relative w-[200px] h-[300px] bg-card">
-                    {series.poster_path ? (
+                    {series.poster_path && !imgError ? (
                         <Image
                             src={poster}
                             alt={series.name}
@@ -86,6 +104,7 @@ export default function SeriesCard({ series }: SeriesCardProps) {
                             sizes="200px"
                             placeholder="blur"
                             blurDataURL={BLUR_PLACEHOLDER}
+                            onError={() => setImgError(true)}
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted text-sm">

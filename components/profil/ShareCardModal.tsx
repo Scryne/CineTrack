@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from '@/lib/logger';
+
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import html2canvas from "html2canvas";
@@ -60,7 +62,7 @@ export default function ShareCardModal({
             link.href = image;
             link.click();
         } catch (error) {
-            console.error("Görsel oluşturulurken hata:", error);
+            logger.error('Görsel oluşturulurken hata', error);
             alert("Görsel oluşturulurken bir hata oluştu.");
         } finally {
             setIsDownloading(false);

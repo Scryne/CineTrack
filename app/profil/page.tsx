@@ -1,57 +1,63 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     getWatched,
-    getWatchedEpisodes,
+    getAllWatchedEpisodes,
     getAllRatings,
     getUserProfile,
     saveUserProfile,
-    getNotificationSettings,
     saveNotificationSettings,
-    STORAGE_KEYS,
-} from "@/lib/storage";
+} from "@/lib/db";
+import { createClient } from "@/lib/supabase";
 import {
     getMovieDetail,
     getSeriesDetail,
     posterUrl,
 } from "@/lib/tmdb";
+import {
+    requestNotificationPermission,
+    scheduleDailyNotification,
+    cancelScheduledNotifications
+} from "@/lib/notifications";
 import type { WatchedItem, RatingItem, UserProfile } from "@/types";
-import type { NotificationSettings } from "@/lib/storage";
-import Card from "@/components/ui/Card";
+import type { NotificationSettings } from "@/lib/db";
 import Modal from "@/components/ui/Modal";
 import ShareCardModal from "@/components/profil/ShareCardModal";
+import { getCinemaPersonality } from "@/lib/cinema-personality";
+
 import {
     Pencil,
     Check,
     Bell,
     BellOff,
     Clock,
-    Download,
-    Trash2,
-    Sparkles,
+    Camera,
     Film,
     Tv2,
-    Award,
-    Users,
-    User,
-    Shield,
-    Settings,
-    Camera,
-    Palette,
-    Zap,
-    Heart,
     Star,
+    Crown,
+    Settings,
+    User,
+    LogOut,
+    Eye,
+    TrendingUp,
+    ChevronRight,
+    BarChart3,
+    Heart,
+    Zap,
+    Clapperboard,
     Flame,
     Globe,
     Music,
     Gamepad2,
     BookOpen,
     Coffee,
-    Crown,
-    Clapperboard,
-    AlertTriangle,
+    Shield
 } from "lucide-react";
 
 // ==========================================
@@ -59,7 +65,6 @@ import {
 // ==========================================
 const AVG_EPISODE_MINUTES = 45;
 
-// Avatar icon options (Lucide icon names)
 const AVATAR_ICONS = [
     { name: "User", icon: User, color: "#7B5CF0" },
     { name: "Film", icon: Film, color: "#9D7FF4" },
@@ -78,86 +83,82 @@ const AVATAR_ICONS = [
     { name: "Shield", icon: Shield, color: "#60A5FA" },
 ];
 
-// ==========================================
-// Yardimci Fonksiyonlar
-// ==========================================
-
-function getCinemaPersonality(stats: {
-    totalMovies: number;
-    totalSeries: number;
-    totalEpisodes: number;
-    avgRating: number;
-    topGenres: string[];
-    totalWatched: number;
-}): { label: string; description: string } {
-    const { totalMovies, totalSeries, totalEpisodes, avgRating, topGenres, totalWatched } = stats;
-
-    if (totalWatched === 0) {
-        return { label: "Yeni Baslayan", description: "Henuz yolculugun basinda! Kesfetmeye basla." };
-    }
-    if (totalSeries > totalMovies * 2 && totalEpisodes > 50) {
-        return { label: "Dizi Bagimlisi", description: "Dizilere hayatini adamissin!" };
-    }
-    if (avgRating >= 8.0) {
-        return { label: "Kalite Avcisi", description: "Sadece en iyileri izliyorsun, standartlarin yuksek." };
-    }
-    if (avgRating <= 4.0 && totalWatched > 10) {
-        return { label: "Cesur Kasif", description: "Her seyi deniyorsun, iyi kotu demeden!" };
-    }
-    if (topGenres[0] === "Aksiyon" || topGenres[0] === "Macera") {
-        return { label: "Aksiyon Tutkunu", description: "Adrenalin senin isin!" };
-    }
-    if (topGenres[0] === "Korku" || topGenres[0] === "Gerilim") {
-        return { label: "Karanlik Ruh", description: "Gerilim ve korku senin alanin." };
-    }
-    if (topGenres[0] === "Komedi") {
-        return { label: "Gulme Uzmani", description: "Hayat kisa, gulelim bari!" };
-    }
-    if (topGenres[0] === "Dram") {
-        return { label: "Duygusal Sinefil", description: "Derin hikayelere bayiliyorsun." };
-    }
-    if (topGenres[0] === "Bilim Kurgu" || topGenres[0] === "Fantastik") {
-        return { label: "Hayal Gezgini", description: "Gercekligin sinirlarini zorluyorsun!" };
-    }
-    if (topGenres[0] === "Belgesel") {
-        return { label: "Bilgi Avcisi", description: "Ogrenmeyi seviyorsun." };
-    }
-    if (totalWatched > 50) {
-        return { label: "Sinema Gurusu", description: "Sen artik bir profesyonelsin!" };
-    }
-    if (totalMovies > totalSeries) {
-        return { label: "Film Sever", description: "Klasik bir sinema tutkunu." };
-    }
-    return { label: "Merakli Izleyici", description: "Her seyden biraz izliyorsun, dengeli bir profil!" };
-}
-
-// ==========================================
-// Toggle Switch Component
-// ==========================================
-
 function ToggleSwitch({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
     return (
         <button
             onClick={onToggle}
-            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${enabled ? "bg-purple" : "bg-[#2A2A35]"
-                }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${enabled ? "bg-purple" : "bg-white/10"}`}
         >
             <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ${enabled ? "translate-x-6" : "translate-x-1"
-                    }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${enabled ? "translate-x-6" : "translate-x-1"}`}
             />
         </button>
     );
 }
 
-// ==========================================
-// Ana Bilesen
-// ==========================================
+function AnimatedCounter({ value, suffix = "", className = "" }: { value: number | string; suffix?: string; className?: string }) {
+    const [displayValue, setDisplayValue] = useState(0);
+    const numValue = typeof value === "string" ? parseFloat(value) || 0 : value;
 
+    useEffect(() => {
+        if (numValue === 0) { setDisplayValue(0); return; }
+        const duration = 800;
+        const steps = 30;
+        const increment = numValue / steps;
+        let current = 0;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= numValue) {
+                setDisplayValue(numValue);
+                clearInterval(timer);
+            } else {
+                setDisplayValue(Math.floor(current));
+            }
+        }, duration / steps);
+        return () => clearInterval(timer);
+    }, [numValue]);
+
+    return (
+        <span className={className}>
+            {typeof value === "string" && value.includes(".") ? displayValue.toFixed(1) : displayValue}
+            {suffix}
+        </span>
+    );
+}
+
+function StatCard({ icon: Icon, label, value, color, loading }: {
+    icon: React.ElementType; label: string; value: number | string; color: string; loading?: boolean;
+}) {
+    return (
+        <div className="relative overflow-hidden rounded-2xl bg-[#0F0F13] border border-white/5 p-5 hover:border-white/10 hover:bg-[#131318] transition-all duration-300 group">
+            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-[0.03] group-hover:opacity-[0.06] transition-opacity blur-xl"
+                style={{ backgroundColor: color }} />
+            <div className="flex items-center gap-3 mb-4 relative z-10">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110" style={{ backgroundColor: `${color}15` }}>
+                    <Icon size={18} style={{ color }} />
+                </div>
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{label}</p>
+            </div>
+            <p className="text-3xl sm:text-4xl font-black font-display relative z-10" style={{ color }}>
+                {loading ? (
+                    <span className="inline-block w-16 h-8 bg-white/5 rounded animate-pulse" />
+                ) : (
+                    <AnimatedCounter value={value} />
+                )}
+            </p>
+        </div>
+    );
+}
+
+// ==========================================
+// Ana Bileşen
+// ==========================================
 export default function ProfilPage() {
+    const router = useRouter();
     const [profile, setProfile] = useState<UserProfile>({ username: "", avatar: "User" });
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [tempUsername, setTempUsername] = useState("");
+    const [showAvatarModal, setShowAvatarModal] = useState(false);
 
     const [watched, setWatched] = useState<WatchedItem[]>([]);
     const [ratings, setRatings] = useState<RatingItem[]>([]);
@@ -165,68 +166,65 @@ export default function ProfilPage() {
     const [loading, setLoading] = useState(true);
     const [detailsLoading, setDetailsLoading] = useState(true);
 
-    // Stats
     const [totalRuntime, setTotalRuntime] = useState(0);
     const [topGenres, setTopGenres] = useState<{ name: string; value: number }[]>([]);
-    const [topActor, setTopActor] = useState<{ name: string; count: number; profilePath: string | null } | null>(null);
 
-    // Top 4 for Share Card
     const [topPosters, setTopPosters] = useState<string[]>([]);
-
-    // Modals
     const [showShareCard, setShowShareCard] = useState(false);
-    const [showResetModal, setShowResetModal] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-    // Notification settings
     const [notifSettings, setNotifSettings] = useState<NotificationSettings>({
         enabled: false,
-        hour: 9,
+        hour: 20,
         minute: 0,
         lastCheckedDate: "",
     });
 
-    // Initial load
     useEffect(() => {
         document.title = "Profilim - CineTrack";
 
-        const userProfile = getUserProfile();
-        // Migrate old emoji avatars to icon name
-        if (!AVATAR_ICONS.find(a => a.name === userProfile.avatar)) {
-            userProfile.avatar = "User";
-        }
-        setProfile(userProfile);
-        setTempUsername(userProfile.username);
+        const loadProfileData = async () => {
+            try {
+                const userProfile = await getUserProfile();
+                if (userProfile) {
+                    if (!AVATAR_ICONS.find(a => a.name === userProfile.avatar)) {
+                        userProfile.avatar = "User";
+                    }
+                    setProfile(userProfile);
+                    setTempUsername(userProfile.username || "");
+                }
 
-        const savedNotif = getNotificationSettings();
-        setNotifSettings(savedNotif);
+                const watchedItems = await getWatched();
+                const allRatings = await getAllRatings();
 
-        const watchedItems = getWatched();
-        const allRatings = getAllRatings();
+                setWatched(watchedItems);
+                setRatings(allRatings);
 
-        setWatched(watchedItems);
-        setRatings(allRatings);
+                let epCount = 0;
+                const allEpisodes = await getAllWatchedEpisodes();
+                epCount = allEpisodes.length;
 
-        let epCount = 0;
-        const seriesIds = Array.from(new Set(watchedItems.filter(w => w.type === "dizi").map(w => w.id)));
-        seriesIds.forEach(sid => {
-            const eps = getWatchedEpisodes(sid);
-            epCount += eps.length;
-        });
-
-        try {
-            const epData = localStorage.getItem("cinetrack_episodes");
-            if (epData) {
-                const allEps = JSON.parse(epData);
-                epCount = Math.max(epCount, allEps.length);
+                setTotalEpisodes(epCount);
+                setTopPosters(watchedItems.slice(0, 4).map(w => posterUrl(w.posterPath)));
+            } catch (error) {
+                logger.error("Profil verileri yüklenirken hata:", error);
+            } finally {
+                setLoading(false);
             }
-        } catch { /* ignore */ }
+        };
 
-        setTotalEpisodes(epCount);
-        setTopPosters(watchedItems.slice(0, 4).map(w => posterUrl(w.posterPath)));
-        setLoading(false);
+        loadProfileData();
+
+        setNotifSettings({
+            enabled: false,
+            hour: 20,
+            minute: 0,
+            lastCheckedDate: "", // default value
+        });
     }, []);
 
-    const fetchDetails = useCallback(async () => {
+    // Fetch details for only the latest 20 items to avoid TMDB rate limit / slow times
+    const fetchRecentTrends = useCallback(async () => {
         if (watched.length === 0) {
             setDetailsLoading(false);
             return;
@@ -237,16 +235,18 @@ export default function ProfilPage() {
         const actorCounter = new Map<string, { count: number; profilePath: string | null }>();
         let runtime = 0;
 
+        const recentItems = watched.slice(0, 20); // Only analyze recent 20 for trends
+
         const batchSize = 5;
-        for (let i = 0; i < watched.length; i += batchSize) {
-            const batch = watched.slice(i, i + batchSize);
+        for (let i = 0; i < recentItems.length; i += batchSize) {
+            const batch = recentItems.slice(i, i + batchSize);
             const promises = batch.map(async (item) => {
                 try {
                     if (item.type === "film") {
                         const detail = await getMovieDetail(item.id);
                         if (detail) {
                             if (detail.runtime) runtime += detail.runtime;
-                            detail.genres.forEach(g => {
+                            detail.genres?.forEach(g => {
                                 genreCounter.set(g.name, (genreCounter.get(g.name) || 0) + 1);
                             });
                             detail.credits?.cast?.slice(0, 5).forEach(a => {
@@ -260,7 +260,7 @@ export default function ProfilPage() {
                     } else {
                         const detail = await getSeriesDetail(item.id);
                         if (detail) {
-                            detail.genres.forEach(g => {
+                            detail.genres?.forEach(g => {
                                 genreCounter.set(g.name, (genreCounter.get(g.name) || 0) + 1);
                             });
                             detail.credits?.cast?.slice(0, 5).forEach(a => {
@@ -277,453 +277,430 @@ export default function ProfilPage() {
             await Promise.all(promises);
         }
 
-        runtime += totalEpisodes * AVG_EPISODE_MINUTES;
-        setTotalRuntime(runtime);
+        // Estimate full runtime from episodes and movies
+        // (For historical accurately we just use the episode count, plus approximate recent movie time)
+        // If they have 100 movies but we only checked 20, we extrapolate the rest.
+        const moviesCount = watched.filter(w => w.type === 'film').length;
+        const approxMovieTime = (moviesCount > 0 && recentItems.length > 0) ? (runtime / recentItems.length) * moviesCount : 0;
+        const totalEpTime = totalEpisodes * AVG_EPISODE_MINUTES;
+
+        setTotalRuntime(approxMovieTime + totalEpTime);
 
         const sortedGenres = Array.from(genreCounter.entries())
             .sort((a, b) => b[1] - a[1]);
         setTopGenres(sortedGenres.map(([name, value]) => ({ name, value })));
-
-        const sortedActors = Array.from(actorCounter.entries())
-            .sort((a, b) => b[1].count - a[1].count);
-        if (sortedActors.length > 0) {
-            setTopActor({ name: sortedActors[0][0], ...sortedActors[0][1] });
-        }
 
         setDetailsLoading(false);
     }, [watched, totalEpisodes]);
 
     useEffect(() => {
         if (!loading && watched.length > 0) {
-            fetchDetails();
+            fetchRecentTrends();
         } else if (!loading) {
             setDetailsLoading(false);
         }
-    }, [loading, watched, fetchDetails]);
+    }, [loading, watched, fetchRecentTrends]);
 
-    // Profile updates
-    const handleSaveUsername = () => {
+    const handleSaveUsername = async () => {
         const trimmed = tempUsername.trim();
         if (trimmed) {
             const updated = { ...profile, username: trimmed };
             setProfile(updated);
-            saveUserProfile(updated);
+            await saveUserProfile(updated);
         } else {
-            setTempUsername(profile.username);
+            setTempUsername(profile.username || "");
         }
         setIsEditingUsername(false);
     };
 
-    const handleSelectAvatar = (iconName: string) => {
+    const handleSelectAvatar = async (iconName: string) => {
         const updated = { ...profile, avatar: iconName };
         setProfile(updated);
-        saveUserProfile(updated);
+        await saveUserProfile(updated);
+        setShowAvatarModal(false);
     };
 
-    const handleToggleNotifications = () => {
-        const updated = { ...notifSettings, enabled: !notifSettings.enabled };
+    const handleToggleNotifications = async () => {
+        const newEnabled = !notifSettings.enabled;
+        if (newEnabled) {
+            const granted = await requestNotificationPermission();
+            if (!granted) {
+                alert("Bildirim izni verilmedi. Lütfen tarayıcı ayarlarından izin verin.");
+                return;
+            }
+            const timeStr = `${String(notifSettings.hour).padStart(2, '0')}:${String(notifSettings.minute).padStart(2, '0')}`;
+            await scheduleDailyNotification(timeStr);
+        } else {
+            await cancelScheduledNotifications();
+        }
+        const updated = { ...notifSettings, enabled: newEnabled };
         setNotifSettings(updated);
         saveNotificationSettings(updated);
     };
 
-    const handleTimeChange = (field: "hour" | "minute", value: number) => {
+    const handleTimeChange = async (field: "hour" | "minute", value: number) => {
         const updated = { ...notifSettings, [field]: value };
         setNotifSettings(updated);
         saveNotificationSettings(updated);
+        if (updated.enabled) {
+            const timeStr = `${String(updated.hour).padStart(2, '0')}:${String(updated.minute).padStart(2, '0')}`;
+            await cancelScheduledNotifications();
+            await scheduleDailyNotification(timeStr);
+        }
     };
 
-    const handleExportData = () => {
-        const keys = Object.values(STORAGE_KEYS);
-        const data: Record<string, unknown> = {};
-        keys.forEach(key => {
-            try {
-                const val = localStorage.getItem(key);
-                if (val) data[key] = JSON.parse(val);
-            } catch { /* skip */ }
-        });
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.download = `cinetrack-export-${new Date().toISOString().slice(0, 10)}.json`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
+    const handleLogout = async () => {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        router.push("/auth/login");
+        router.refresh(); // strict clear
     };
 
-    const handleResetData = () => {
-        const keys = Object.values(STORAGE_KEYS);
-        keys.forEach(key => localStorage.removeItem(key));
-        setShowResetModal(false);
-        window.location.reload();
-    };
-
-    // Computations
     const totalMovies = watched.filter(w => w.type === "film").length;
     const totalSeries = watched.filter(w => w.type === "dizi").length;
-
-    const avgRating = ratings.length > 0
-        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-        : 0;
-
+    const avgRating = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length : 0;
     const runtimeHours = Math.floor(totalRuntime / 60);
 
     const personality = getCinemaPersonality({
-        totalMovies,
-        totalSeries,
-        totalEpisodes,
-        avgRating,
-        topGenres: topGenres.map(g => g.name),
-        totalWatched: watched.length,
+        totalMovies, totalSeries, totalEpisodes, avgRating,
+        topGenres: topGenres.map(g => g.name), totalWatched: watched.length,
     });
 
-    // Find current avatar icon
     const currentAvatarConfig = AVATAR_ICONS.find(a => a.name === profile.avatar) || AVATAR_ICONS[0];
     const AvatarIcon = currentAvatarConfig.icon;
+    const recentWatched = watched.slice(0, 8);
 
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="w-10 h-10 border-4 border-purple border-t-transparent rounded-full animate-spin" />
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-purple border-t-transparent rounded-full animate-spin" />
+                    <p className="text-text-muted text-sm font-medium animate-pulse">Profil yükleniyor...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-5xl mx-auto space-y-10 pb-20 animate-fade-in px-4">
-            {/* Header / Profil Secimi */}
-            <Card className="p-6 sm:p-10">
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                    {/* Avatar */}
-                    <div className="relative group shrink-0">
+        <div className="max-w-6xl mx-auto pb-24 px-4 sm:px-6 animate-fade-in relative">
+            {/* Background elements */}
+            <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
+                <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-purple/5 rounded-full blur-[120px] mix-blend-screen" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] mix-blend-screen" />
+            </div>
+
+            {/* ========================================== */}
+            {/* PROFILE HEAD */}
+            {/* ========================================== */}
+            <section className="relative overflow-hidden rounded-[2.5rem] bg-[#0F0F13]/80 backdrop-blur-xl border border-white/5 mb-10 group">
+                <div
+                    className="absolute inset-x-0 h-40 opacity-40 group-hover:opacity-60 transition-opacity duration-700"
+                    style={{ background: `linear-gradient(to bottom, ${currentAvatarConfig.color}40, transparent)` }}
+                />
+
+                <div className="relative p-8 sm:p-12 pb-10 flex flex-col md:flex-row items-center md:items-end gap-8">
+                    {/* Avatar Studio */}
+                    <button
+                        onClick={() => setShowAvatarModal(true)}
+                        className="relative shrink-0 group/avatar z-10"
+                        title="Avatar değiştirmek için tıkla"
+                    >
+                        <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover/avatar:opacity-100 transition duration-500" />
                         <div
-                            className="w-32 h-32 rounded-full flex items-center justify-center shadow-lg border-2 border-[#2A2A35] group-hover:border-purple/40 transition-colors"
-                            style={{ backgroundColor: `${currentAvatarConfig.color}20` }}
+                            className="w-36 h-36 rounded-[2rem] flex items-center justify-center outline outline-offset-4 outline-2 outline-white/5 bg-[#16161A] shadow-2xl transition-all duration-500 group-hover/avatar:rotate-2 group-hover/avatar:scale-105"
+                            style={{
+                                outlineColor: `${currentAvatarConfig.color}80`,
+                                boxShadow: `0 20px 40px -10px ${currentAvatarConfig.color}40`
+                            }}
                         >
-                            <AvatarIcon size={56} style={{ color: currentAvatarConfig.color }} />
+                            <AvatarIcon size={64} style={{ color: currentAvatarConfig.color }} />
                         </div>
-                    </div>
-
-                    <div className="flex-1 text-center md:text-left space-y-6">
-                        {/* Username */}
-                        <div>
-                            {isEditingUsername ? (
-                                <div className="flex items-center justify-center md:justify-start gap-2">
-                                    <input
-                                        type="text"
-                                        value={tempUsername}
-                                        onChange={(e) => setTempUsername(e.target.value)}
-                                        maxLength={20}
-                                        className="bg-[#0D0D0F] border border-[#2A2A35] rounded-lg px-4 py-2 text-2xl font-bold text-text-primary focus:outline-none focus:border-purple font-display"
-                                        autoFocus
-                                        onKeyDown={(e) => e.key === "Enter" && handleSaveUsername()}
-                                    />
-                                    <button
-                                        onClick={handleSaveUsername}
-                                        className="p-2.5 bg-purple text-white rounded-lg hover:bg-purple-light transition-colors"
-                                    >
-                                        <Check size={18} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center md:justify-start gap-3">
-                                    <h1 className="text-4xl font-extrabold tracking-tight font-display">{profile.username}</h1>
-                                    <button
-                                        onClick={() => setIsEditingUsername(true)}
-                                        className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-[#1E1E24] transition-colors"
-                                        title="Ismi Duzenle"
-                                    >
-                                        <Pencil size={16} />
-                                    </button>
-                                </div>
-                            )}
-                            <p className="text-text-secondary mt-2 text-lg">CineTrack uyesi</p>
+                        <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center shadow-lg border-2 border-[#0F0F13] scale-0 opacity-0 group-hover/avatar:scale-100 group-hover/avatar:opacity-100 transition-all duration-300">
+                            <Pencil size={18} />
                         </div>
+                    </button>
 
-                        {/* Avatar Secici */}
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium text-text-secondary uppercase tracking-wider flex items-center gap-2">
-                                <Palette size={14} />
-                                Avatar Sec
-                            </p>
-                            <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                {AVATAR_ICONS.map(({ name, icon: IconComponent, color }) => (
-                                    <button
-                                        key={name}
-                                        onClick={() => handleSelectAvatar(name)}
-                                        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${profile.avatar === name
-                                            ? "bg-purple/20 border-2 border-purple scale-110 shadow-lg"
-                                            : "bg-[#1E1E24] border border-transparent hover:bg-[#2A2A35] hover:scale-105"
-                                            }`}
-                                    >
-                                        <IconComponent size={20} style={{ color }} />
-                                    </button>
-                                ))}
+                    {/* Identity & Actions */}
+                    <div className="flex-1 text-center md:text-left flex flex-col gap-3 relative z-10">
+                        {isEditingUsername ? (
+                            <div className="flex justify-center md:justify-start items-center gap-3">
+                                <input
+                                    type="text"
+                                    value={tempUsername}
+                                    onChange={(e) => setTempUsername(e.target.value)}
+                                    maxLength={25}
+                                    className="bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-3 text-3xl font-black text-white focus:outline-none focus:border-white w-[250px] font-display shadow-inner"
+                                    autoFocus
+                                    onKeyDown={(e) => e.key === "Enter" && handleSaveUsername()}
+                                />
+                                <button
+                                    onClick={handleSaveUsername}
+                                    className="p-4 bg-white text-black rounded-2xl hover:bg-gray-200 transition-colors shadow-lg"
+                                >
+                                    <Check size={20} className="stroke-[3]" />
+                                </button>
                             </div>
+                        ) : (
+                            <div className="flex justify-center md:justify-start items-baseline gap-4 group/title select-none">
+                                <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 font-display">
+                                    {profile.username}
+                                </h1>
+                                <button
+                                    onClick={() => setIsEditingUsername(true)}
+                                    className="opacity-0 group-hover/title:opacity-100 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all transform hover:scale-110"
+                                >
+                                    <Pencil size={16} />
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 sm:gap-5 text-sm font-medium text-white/60">
+                            <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 backdrop-blur-sm">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: currentAvatarConfig.color }} />
+                                {personality.label}
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <Eye size={16} className="text-purple" />
+                                <span className="text-white font-bold">{watched.length}</span> izlendi
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <Star size={16} className="text-[#F59E0B]" />
+                                <span className="text-white font-bold">{ratings.length}</span> oy
+                            </span>
                         </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col gap-3 w-full md:w-auto mt-4 md:mt-0 shrink-0">
+                    <div className="flex flex-row md:flex-col items-center gap-3 relative z-10 shrink-0">
                         <button
                             onClick={() => setShowShareCard(true)}
                             disabled={watched.length === 0}
-                            className="px-6 py-3 bg-white/10 text-white rounded-xl font-medium hover:bg-white/15 transition-all w-full md:w-auto flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-white text-black px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                         >
-                            <Camera size={18} />
-                            <span>Profil Kartini Paylas</span>
+                            <Camera size={18} className="stroke-[2.5]" />
+                            <span>Sosyalde Paylaş</span>
+                        </button>
+                        <button
+                            onClick={() => setShowSettingsModal(true)}
+                            className="bg-[#16161A] border border-white/5 px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#1E1E24] hover:border-white/10 transition-all w-full sm:w-auto text-white/70 hover:text-white"
+                        >
+                            <Settings size={18} />
+                            <span>Hesap Ayarları</span>
                         </button>
                     </div>
                 </div>
-            </Card>
+            </section>
 
-            {/* Sinema Kimligin & Istatistikler */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Sol: Sinema Kimligi */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-dark via-purple to-purple-light p-8 text-white shadow-2xl">
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+            {/* ========================================== */}
+            {/* PRIME STATS CARD */}
+            {/* ========================================== */}
+            <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                <StatCard icon={Film} label="İzlenen Film" value={totalMovies} color="#7B5CF0" loading={loading} />
+                <StatCard icon={Tv2} label="İzlenen Dizi" value={totalSeries} color="#22C55E" loading={loading} />
+                <StatCard icon={Clock} label="Harcanan Saat" value={detailsLoading ? "..." : runtimeHours} color="#3B82F6" loading={detailsLoading} />
+                <StatCard icon={Star} label="Ortalama Puan" value={avgRating > 0 ? avgRating.toFixed(1) : "—"} color="#F59E0B" loading={false} />
+            </section>
 
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Sparkles size={16} className="text-white/80" />
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-white/80">
-                                SINEMA KIMLIGIN
+            {/* ========================================== */}
+            {/* DISCOVERY & TASTE */}
+            {/* ========================================== */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+
+                {/* Son Trendler (Gen/Taste) */}
+                <div className="lg:col-span-5 rounded-[2rem] bg-[#0F0F13] border border-white/5 p-8 flex flex-col">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-xl font-display font-black text-white flex items-center gap-3">
+                                <BarChart3 size={20} className="text-purple" />
+                                Sinema Zevkin
                             </h2>
-                        </div>
-                        <h3 className="text-4xl font-black mb-4 font-display">
-                            {personality.label}
-                        </h3>
-                        <p className="text-sm text-white/70 mb-8 max-w-[80%] leading-relaxed">
-                            {personality.description}
-                        </p>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-xl">
-                                <div className="w-12 h-12 rounded-full bg-white/15 flex items-center justify-center">
-                                    <Clock size={22} />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-white/60 uppercase tracking-wider font-semibold mb-1">Hayatinin</p>
-                                    <p className="text-xl font-bold">
-                                        {detailsLoading ? "..." : <>{runtimeHours} saatini</>} sinemaya adadin
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-xl">
-                                <div className="w-12 h-12 rounded-full bg-white/15 flex items-center justify-center">
-                                    <Award size={22} />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-white/60 uppercase tracking-wider font-semibold mb-1">En Cok Izledigin Tur</p>
-                                    <p className="text-xl font-bold">
-                                        {detailsLoading ? "..." : topGenres[0]?.name || "Belirsiz"}
-                                    </p>
-                                </div>
-                            </div>
+                            <p className="text-sm text-white/40 mt-1">Son izlenenlere göre analizin</p>
                         </div>
                     </div>
+
+                    {detailsLoading ? (
+                        <div className="space-y-5 flex-1 justify-center flex flex-col">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="flex items-center gap-4">
+                                    <div className="w-24 h-4 bg-white/5 rounded animate-pulse" />
+                                    <div className="flex-1 h-3 bg-white/5 rounded-full animate-pulse" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : topGenres.length > 0 ? (
+                        <div className="space-y-4 flex-1">
+                            {topGenres.slice(0, 5).map((genre, index) => {
+                                const maxValue = topGenres[0]?.value || 1;
+                                const percentage = (genre.value / maxValue) * 100;
+                                const colors = ["#7B5CF0", "#3B82F6", "#22C55E", "#F59E0B", "#EC4899"];
+                                const color = colors[index % colors.length];
+
+                                return (
+                                    <div key={genre.name} className="group flex items-center gap-4">
+                                        <span className="text-sm font-semibold text-white/60 w-24 truncate text-right group-hover:text-white transition-colors">{genre.name}</span>
+                                        <div className="flex-1 h-3 bg-[#16161A] rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full transition-all duration-1000 ease-out break-all"
+                                                style={{ width: `${percentage}%`, backgroundColor: color }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-white/30 text-center py-6">
+                            <Clapperboard size={36} className="mb-4 opacity-50" />
+                            <p className="text-sm font-medium">Burası biraz sessiz.</p>
+                            <p className="text-xs mt-1">İçerik izledikçe zevk analizin açılacak.</p>
+                        </div>
+                    )}
                 </div>
 
-                {/* Sag: Profil Istatistikleri */}
-                <div className="space-y-6">
-                    <Card className="p-6 sm:p-8 h-full flex flex-col justify-center gap-6">
-                        <h2 className="text-xl font-display font-bold flex items-center gap-2">
-                            <Award size={20} className="text-purple" />
-                            Profil Istatistikleri
-                        </h2>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-[#0D0D0F] p-4 rounded-xl border border-[#2A2A35]">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Film size={14} className="text-purple" />
-                                    <p className="text-xs text-text-secondary font-medium">Film</p>
-                                </div>
-                                <p className="text-2xl font-bold font-display">{totalMovies}</p>
-                            </div>
-                            <div className="bg-[#0D0D0F] p-4 rounded-xl border border-[#2A2A35]">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Tv2 size={14} className="text-[#22C55E]" />
-                                    <p className="text-xs text-text-secondary font-medium">Dizi</p>
-                                </div>
-                                <p className="text-2xl font-bold font-display">{totalSeries}</p>
-                            </div>
-                            <div className="bg-[#0D0D0F] p-4 rounded-xl border border-[#2A2A35]">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Clock size={14} className="text-purple" />
-                                    <p className="text-xs text-text-secondary font-medium">Toplam Saat</p>
-                                </div>
-                                <p className="text-2xl font-bold text-purple font-display">{detailsLoading ? "..." : runtimeHours}</p>
-                            </div>
-                            <div className="bg-[#0D0D0F] p-4 rounded-xl border border-[#2A2A35]">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Star size={14} className="text-[#F59E0B]" />
-                                    <p className="text-xs text-text-secondary font-medium">Puan Ortalamasi</p>
-                                </div>
-                                <p className="text-2xl font-bold text-[#F59E0B] font-display">{avgRating > 0 ? avgRating.toFixed(1) : "—"}</p>
-                            </div>
+                {/* Son İzlenenler Rafı */}
+                <div className="lg:col-span-7 rounded-[2rem] bg-[#0F0F13] border border-white/5 p-8 flex flex-col">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-xl font-display font-black text-white flex items-center gap-3">
+                                <TrendingUp size={20} className="text-green-500" />
+                                Son İzlenenler
+                            </h2>
+                            <p className="text-sm text-white/40 mt-1">İzleme defterindeki son {recentWatched.length} yapım</p>
                         </div>
+                        {watched.length > 8 && (
+                            <Link href="/gecmis" className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-semibold text-white transition-colors flex items-center gap-2">
+                                Tümünü Gör <ChevronRight size={14} />
+                            </Link>
+                        )}
+                    </div>
 
-                        {/* Top Actor */}
-                        <div className="bg-[#0D0D0F] p-5 rounded-xl border border-[#2A2A35] flex items-center gap-4">
-                            <div className="relative w-14 h-14 rounded-full overflow-hidden bg-[#2A2A35] shrink-0 border-2 border-[#2A2A35]">
-                                {topActor?.profilePath ? (
-                                    <Image
-                                        src={`https://image.tmdb.org/t/p/w185${topActor.profilePath}`}
-                                        alt={topActor.name}
-                                        fill
-                                        className="object-cover"
-                                        sizes="56px"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <User size={24} className="text-text-secondary" />
+                    {recentWatched.length > 0 ? (
+                        <div className="grid grid-cols-4 gap-4">
+                            {recentWatched.map((item) => (
+                                <Link
+                                    key={`${item.type}-${item.id}`}
+                                    href={`/${item.type === "film" ? "film" : "dizi"}/${item.id}`}
+                                    className="group flex flex-col aspcet-poster relative overflow-hidden rounded-xl border border-white/5 hover:border-white/20 transition-all duration-300"
+                                >
+                                    <div className="relative aspect-[2/3] w-full bg-[#16161A]">
+                                        {item.posterPath ? (
+                                            <Image
+                                                src={item.posterPath.startsWith("http") ? item.posterPath : posterUrl(item.posterPath)}
+                                                alt={item.title}
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                sizes="(max-width: 768px) 25vw, 15vw"
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center text-white/20">
+                                                <Film size={24} />
+                                            </div>
+                                        )}
+                                        {/* Hover Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                                            <p className="text-xs font-bold text-white line-clamp-2 leading-tight">
+                                                {item.title}
+                                            </p>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Users size={12} className="text-purple" />
-                                    <p className="text-xs text-text-secondary uppercase tracking-wider font-semibold">Ekranda En Cok Gordugn</p>
-                                </div>
-                                <p className="text-xl font-bold font-display">
-                                    {detailsLoading ? "Yukleniyor..." : topActor?.name || "Belirsiz"}
-                                </p>
-                                {!detailsLoading && topActor && (
-                                    <p className="text-sm text-text-secondary">{topActor.count} icerik</p>
-                                )}
-                            </div>
+                                </Link>
+                            ))}
                         </div>
-                    </Card>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-white/30 text-center py-6 border-2 border-dashed border-white/5 rounded-2xl">
+                            <Eye size={36} className="mb-4 opacity-50" />
+                            <p className="text-sm font-medium">Bomboş bir sayfa.</p>
+                            <Link href="/kesif" className="text-purple hover:underline mt-2 text-sm font-semibold">Keşfe çıkmaya ne dersin?</Link>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* ========================================== */}
-            {/* AYARLAR */}
+            {/* AVATAR SELECTION MODAL */}
             {/* ========================================== */}
-            <Card className="p-6 sm:p-8">
-                <h2 className="text-xl font-display font-bold flex items-center gap-2 mb-6">
-                    <Settings size={20} className="text-purple" />
-                    Ayarlar
-                </h2>
+            <Modal isOpen={showAvatarModal} onClose={() => setShowAvatarModal(false)} title="Profil Karakteri Seç">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 p-2">
+                    {AVATAR_ICONS.map(({ name, icon: IconComponent, color }) => (
+                        <button
+                            key={name}
+                            onClick={() => handleSelectAvatar(name)}
+                            className={`w-full aspect-square flex items-center justify-center rounded-[1.25rem] transition-all duration-300 ${profile.avatar === name
+                                ? "bg-white border-2 border-white scale-110 shadow-lg z-10"
+                                : "bg-[#16161A] border border-white/5 hover:bg-[#1E1E24] hover:scale-105 hover:border-white/20"
+                                }`}
+                        >
+                            <IconComponent size={32} style={{ color: profile.avatar === name ? '#000' : color }} />
+                        </button>
+                    ))}
+                </div>
+            </Modal>
 
-                <div className="space-y-6">
+            {/* ========================================== */}
+            {/* SETTINGS MODAL */}
+            {/* ========================================== */}
+            <Modal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} title="Hesap Ayarları">
+                <div className="space-y-3">
                     {/* Bildirimler */}
-                    <div className="flex items-center justify-between py-3 border-b border-[#2A2A35]">
-                        <div className="flex items-center gap-3">
-                            {notifSettings.enabled ? (
-                                <Bell size={18} className="text-purple" />
-                            ) : (
-                                <BellOff size={18} className="text-text-secondary" />
-                            )}
-                            <div>
-                                <p className="text-sm font-medium text-text-primary">Bildirimler</p>
-                                <p className="text-xs text-text-secondary">Gunluk izleme hatirlaticisi</p>
-                            </div>
-                        </div>
-                        <ToggleSwitch enabled={notifSettings.enabled} onToggle={handleToggleNotifications} />
-                    </div>
-
-                    {/* Bildirim Saati */}
-                    {notifSettings.enabled && (
-                        <div className="flex items-center justify-between py-3 border-b border-[#2A2A35]">
-                            <div className="flex items-center gap-3">
-                                <Clock size={18} className="text-purple" />
+                    <div className="bg-[#16161A] border border-white/5 rounded-2xl p-5 hover:bg-[#1A1A1F] transition-colors">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${notifSettings.enabled ? 'bg-purple/20 text-purple' : 'bg-white/5 text-white/40'
+                                    }`}>
+                                    {notifSettings.enabled ? <Bell size={20} /> : <BellOff size={20} />}
+                                </div>
                                 <div>
-                                    <p className="text-sm font-medium text-text-primary">Bildirim Saati</p>
-                                    <p className="text-xs text-text-secondary">Hangi saatte hatirlatilsin?</p>
+                                    <p className="text-base font-semibold text-white">İzleme Hatırlatıcısı</p>
+                                    <p className="text-sm text-white/40">Günü kaçırma, dizilerini hatırla</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                                <select
-                                    value={notifSettings.hour}
-                                    onChange={(e) => handleTimeChange("hour", Number(e.target.value))}
-                                    className="bg-[#0D0D0F] border border-[#2A2A35] rounded-lg px-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:border-purple appearance-none cursor-pointer"
-                                >
-                                    {Array.from({ length: 24 }, (_, i) => (
-                                        <option key={i} value={i}>{String(i).padStart(2, "0")}</option>
-                                    ))}
-                                </select>
-                                <span className="text-text-secondary font-bold">:</span>
-                                <select
-                                    value={notifSettings.minute}
-                                    onChange={(e) => handleTimeChange("minute", Number(e.target.value))}
-                                    className="bg-[#0D0D0F] border border-[#2A2A35] rounded-lg px-2.5 py-1.5 text-sm text-text-primary focus:outline-none focus:border-purple appearance-none cursor-pointer"
-                                >
-                                    {[0, 15, 30, 45].map(m => (
-                                        <option key={m} value={m}>{String(m).padStart(2, "0")}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            <ToggleSwitch enabled={notifSettings.enabled} onToggle={handleToggleNotifications} />
                         </div>
-                    )}
 
-                    {/* Veri Disa Aktar */}
-                    <div className="flex items-center justify-between py-3 border-b border-[#2A2A35]">
-                        <div className="flex items-center gap-3">
-                            <Download size={18} className="text-purple" />
-                            <div>
-                                <p className="text-sm font-medium text-text-primary">Tum Veriyi Disa Aktar</p>
-                                <p className="text-xs text-text-secondary">Verilerini JSON dosyasi olarak indir</p>
+                        {notifSettings.enabled && (
+                            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-3 text-white/70">
+                                    <Clock size={16} />
+                                    <span className="text-sm font-medium">Bildirim Saati</span>
+                                </div>
+                                <div className="flex items-center gap-1 bg-black/50 border border-white/10 rounded-xl px-2 py-1">
+                                    <select
+                                        value={notifSettings.hour}
+                                        onChange={(e) => handleTimeChange("hour", Number(e.target.value))}
+                                        className="bg-transparent text-white focus:outline-none appearance-none cursor-pointer py-1 px-2 font-mono font-medium"
+                                    >
+                                        {Array.from({ length: 24 }, (_, i) => (
+                                            <option key={i} value={i} className="bg-[#16161A]">{String(i).padStart(2, "0")}</option>
+                                        ))}
+                                    </select>
+                                    <span className="text-white/30 font-bold">:</span>
+                                    <select
+                                        value={notifSettings.minute}
+                                        onChange={(e) => handleTimeChange("minute", Number(e.target.value))}
+                                        className="bg-transparent text-white focus:outline-none appearance-none cursor-pointer py-1 px-2 font-mono font-medium"
+                                    >
+                                        {[0, 15, 30, 45].map(m => (
+                                            <option key={m} value={m} className="bg-[#16161A]">{String(m).padStart(2, "0")}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        <button
-                            onClick={handleExportData}
-                            className="px-4 py-2 bg-[#1E1E24] border border-[#2A2A35] hover:border-purple text-sm text-text-primary rounded-xl font-medium transition-colors flex items-center gap-2"
-                        >
-                            <Download size={14} />
-                            Indir
-                        </button>
+                        )}
                     </div>
 
-                    {/* Veriyi Sifirla */}
-                    <div className="flex items-center justify-between py-3">
-                        <div className="flex items-center gap-3">
-                            <Trash2 size={18} className="text-red-500" />
-                            <div>
-                                <p className="text-sm font-medium text-red-400">Veriyi Sifirla</p>
-                                <p className="text-xs text-text-secondary">Tum verilerini kalici olarak sil</p>
-                            </div>
+                    {/* Çıkış */}
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-4 p-5 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all text-left mt-6"
+                    >
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-500/20 text-red-500">
+                            <LogOut size={20} />
                         </div>
-                        <button
-                            onClick={() => setShowResetModal(true)}
-                            className="px-4 py-2 bg-transparent border border-red-500/50 hover:bg-red-500/10 text-sm text-red-400 rounded-xl font-medium transition-colors flex items-center gap-2"
-                        >
-                            <Trash2 size={14} />
-                            Sifirla
-                        </button>
-                    </div>
-                </div>
-            </Card>
-
-            {/* Sifirlama Onay Modali */}
-            <Modal
-                isOpen={showResetModal}
-                onClose={() => setShowResetModal(false)}
-                title="Veriyi Sifirla"
-            >
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-                        <AlertTriangle size={24} className="text-red-500 shrink-0" />
-                        <p className="text-sm text-red-300">
-                            Bu islem geri alinamaz! Tum izleme gecmisiniz, puanlariniz ve ayarlariniz kalici olarak silinecektir.
-                        </p>
-                    </div>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setShowResetModal(false)}
-                            className="flex-1 py-3 bg-[#1E1E24] border border-[#2A2A35] text-text-primary rounded-xl font-medium hover:bg-[#2A2A35] transition-colors"
-                        >
-                            Vazgec
-                        </button>
-                        <button
-                            onClick={handleResetData}
-                            className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <Trash2 size={16} />
-                            Evet, Sifirla
-                        </button>
-                    </div>
+                        <div>
+                            <p className="text-base font-semibold text-red-400">Hesaptan Çıkış Yap</p>
+                            <p className="text-sm text-red-400/60">Tarikata kısa bir mola ver</p>
+                        </div>
+                    </button>
+                    <p className="text-xs text-center text-white/30 pt-4">Bu, hesabınızdaki hiçbir veriyi silmez.</p>
                 </div>
             </Modal>
 
@@ -731,7 +708,7 @@ export default function ProfilPage() {
             <ShareCardModal
                 isOpen={showShareCard}
                 onClose={() => setShowShareCard(false)}
-                username={profile.username}
+                username={profile.username || ""}
                 topPosters={topPosters}
                 stats={{
                     totalMovies,

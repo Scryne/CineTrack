@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from '@/lib/logger';
+
 import { useState, useEffect, useRef } from "react";
 import html2canvas from "html2canvas";
 import {
@@ -73,7 +75,7 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
             link.href = image;
             link.click();
         } catch (error) {
-            console.error("Gorsel olusturulurken hata:", error);
+            logger.error('Görsel oluşturulurken hata', error);
         } finally {
             setIsDownloading(false);
         }

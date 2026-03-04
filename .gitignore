@@ -37,6 +37,7 @@ next-env.d.ts
 # Build logs & temp files
 build.log
 build_*.txt
+build-*.txt
 dev_error_*.txt
 eslint_output*.json
 lint_output*.txt
@@ -46,6 +47,8 @@ tsc-out.json
 push_error.txt
 test.html
 test*.txt
+*.sql
+response.html
 
 # IDE
 .vscode/

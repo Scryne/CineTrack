@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    productionBrowserSourceMaps: false,
+    compiler: {
+        removeConsole: process.env.NODE_ENV === 'production'
+            ? { exclude: ['error'] }
+            : false,
+    },
     async headers() {
         return [
             {
@@ -8,6 +14,23 @@ const nextConfig = {
                     {
                         key: "X-Frame-Options",
                         value: "SAMEORIGIN",
+                    },
+                ],
+            },
+            {
+                source: "/:path*",
+                headers: [
+                    {
+                        key: "X-Content-Type-Options",
+                        value: "nosniff",
+                    },
+                    {
+                        key: "X-DNS-Prefetch-Control",
+                        value: "on",
+                    },
+                    {
+                        key: "Referrer-Policy",
+                        value: "strict-origin-when-cross-origin",
                     },
                 ],
             },

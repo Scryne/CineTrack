@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from '@/lib/logger';
+
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,12 +15,12 @@ import {
     TMDBMovieResult,
     TMDBSeriesDetail,
 } from "@/lib/tmdb";
-import { getWatchlist } from "@/lib/storage";
+import { getWatchlist } from "@/lib/db";
 import {
     getNotificationSettings,
     saveNotificationSettings,
     NotificationSettings,
-} from "@/lib/storage";
+} from "@/lib/db";
 import type { WatchlistItem } from "@/types";
 import { Tv, CalendarDays, Film, Star, Bell, Inbox } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -119,7 +121,7 @@ export default function TakvimPage() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const watchlist = getWatchlist();
+            const watchlist = await getWatchlist();
             const seriesInWatchlist = watchlist.filter((i: WatchlistItem) => i.type === "dizi");
 
             // 1) Bu haftanın bölümleri — watchlist dizileri
@@ -218,7 +220,7 @@ export default function TakvimPage() {
             }
             setUpcomingSeries(seriesUpcoming);
         } catch (err) {
-            console.error("Takvim verileri yüklenirken hata:", err);
+            logger.error('Takvim verileri yüklenirken hata', err);
         } finally {
             setLoading(false);
         }
@@ -234,8 +236,7 @@ export default function TakvimPage() {
 
     useEffect(() => {
         // Ayarları yükle
-        const settings = getNotificationSettings();
-        setNotifSettings(settings);
+        getNotificationSettings().then(settings => setNotifSettings(settings));
 
         // İzin durumunu kontrol et
         if (typeof Notification !== "undefined") {
@@ -246,13 +247,14 @@ export default function TakvimPage() {
                 return () => clearTimeout(timer);
             }
         }
+        return undefined;
     }, []);
 
     // Service Worker kaydet
     useEffect(() => {
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("/sw.js").catch((err) => {
-                console.error("SW kayıt hatası:", err);
+                logger.error('SW kayıt hatası', err);
             });
         }
     }, []);
@@ -289,7 +291,7 @@ export default function TakvimPage() {
                         });
                     }
                 }
-                saveNotificationSettings({ lastCheckedDate: todayStr });
+                saveNotificationSettings({ ...notifSettings, lastCheckedDate: todayStr });
                 setNotifSettings((prev) => ({ ...prev, lastCheckedDate: todayStr }));
             }
         }, 60_000);
@@ -303,7 +305,7 @@ export default function TakvimPage() {
         setNotifPermission(perm);
         setShowNotifModal(false);
         if (perm === "granted") {
-            saveNotificationSettings({ enabled: true });
+            saveNotificationSettings({ ...notifSettings, enabled: true });
             setNotifSettings((prev) => ({ ...prev, enabled: true }));
         }
     };
@@ -881,7 +883,7 @@ export default function TakvimPage() {
                             <button
                                 onClick={() => {
                                     const newVal = !notifSettings.enabled;
-                                    saveNotificationSettings({ enabled: newVal });
+                                    saveNotificationSettings({ ...notifSettings, enabled: newVal });
                                     setNotifSettings((prev) => ({ ...prev, enabled: newVal }));
                                 }}
                                 className={`relative w-12 h-7 rounded-full transition-colors ${notifSettings.enabled ? "bg-accent" : "bg-white/20"
@@ -905,7 +907,7 @@ export default function TakvimPage() {
                                     value={notifSettings.hour}
                                     onChange={(e) => {
                                         const hour = Number(e.target.value);
-                                        saveNotificationSettings({ hour });
+                                        saveNotificationSettings({ ...notifSettings, hour });
                                         setNotifSettings((prev) => ({ ...prev, hour }));
                                     }}
                                     className="flex-1 bg-card border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"
@@ -922,7 +924,7 @@ export default function TakvimPage() {
                                     value={notifSettings.minute}
                                     onChange={(e) => {
                                         const minute = Number(e.target.value);
-                                        saveNotificationSettings({ minute });
+                                        saveNotificationSettings({ ...notifSettings, minute });
                                         setNotifSettings((prev) => ({ ...prev, minute }));
                                     }}
                                     className="flex-1 bg-card border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"

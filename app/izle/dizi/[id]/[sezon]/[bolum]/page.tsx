@@ -1,5 +1,7 @@
 'use client'
 
+import { logger } from '@/lib/logger'
+
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,7 +10,7 @@ import { ChevronLeft, ChevronRight, ExternalLink, PlayCircle, Bookmark, Check, S
 import toast from 'react-hot-toast'
 
 import { getSeriesDetail, getSeasonDetail, posterUrl, profileUrl, BLUR_PLACEHOLDER } from '@/lib/tmdb'
-import SOURCES, { getEpisodeEmbedUrl } from '@/lib/sources'
+import SOURCES, { getEpisodeEmbedUrl, isSourceBlocked } from '@/lib/sources'
 import { searchSubtitles, getSubtitleDownloadUrl, loadSubtitleAsBlob } from '@/lib/subtitles'
 import {
     isInWatchlist,
@@ -22,7 +24,7 @@ import {
     getWatchedEpisodes,
     saveWatchProgress,
     getWatchProgress
-} from '@/lib/storage'
+} from "@/lib/db"
 import type { TMDBSeriesDetail, TMDBSeasonDetail, TMDBEpisode, TMDBCastMember } from '@/lib/tmdb'
 import type { SubtitleResult } from '@/types/player'
 import dynamic from 'next/dynamic'
@@ -55,6 +57,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
             }, 10000)
             return () => clearTimeout(timer)
         }
+        return undefined
     }, [loading])
 
     // Player States
@@ -108,8 +111,11 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                     }
                 }
 
-                setInWatchlist(isInWatchlist(seriesId, "dizi"))
-                setSeriesWatched(isWatched(seriesId, "dizi"))
+                const inWL = await isInWatchlist(seriesId, "dizi");
+                setInWatchlist(inWL);
+
+                const isW = await isWatched(seriesId, "dizi");
+                setSeriesWatched(isW);
 
                 // OpenSubtitles API ile altyazıları çek
                 setIsLoadingSubtitles(true)
@@ -124,19 +130,21 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                         setSubtitles(subs)
                     }
                 } catch (error) {
-                    console.error("Altyazı yüklenirken hata:", error)
+                    logger.error('Altyazı yüklenirken hata', error)
                 } finally {
                     if (isMounted) setIsLoadingSubtitles(false)
                 }
 
-                const progress = getWatchProgress(seriesId, "dizi")
+                const progress = await getWatchProgress(seriesId, "dizi");
 
                 // Sadece yarıda bırakılmışsa (>2 dk) ve aynı bölümdeyse bildirimi göster
                 if (progress && progress.timeSpentSeconds && progress.timeSpentSeconds > 120 && progress.season === seasonNumber && progress.episode === episodeNumber) {
                     setShowProgressModal(true)
                 }
 
-                saveWatchProgress({
+                const epListUrl = await getWatchedEpisodes(seriesId);
+
+                await saveWatchProgress({
                     tmdbId: seriesId,
                     type: 'dizi',
                     title: seriesData.name,
@@ -146,7 +154,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                     episode: episodeNumber,
                     episodeTitle: currentEpisode?.name || `Bölüm ${episodeNumber}`,
                     totalEpisodes: seriesData.number_of_episodes,
-                    watchedEpisodes: getWatchedEpisodes(seriesId).length,
+                    watchedEpisodes: epListUrl.length,
                     timeSpentSeconds: progress?.season === seasonNumber && progress?.episode === episodeNumber ? progress.timeSpentSeconds : 0,
                     updatedAt: new Date().toISOString()
                 })
@@ -165,10 +173,10 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
     useEffect(() => {
         if (!series) return;
 
-        const interval = setInterval(() => {
-            const currentProgress = getWatchProgress(seriesId, "dizi");
+        const interval = setInterval(async () => {
+            const currentProgress = await getWatchProgress(seriesId, "dizi");
             if (currentProgress && currentProgress.season === seasonNumber && currentProgress.episode === episodeNumber) {
-                saveWatchProgress({
+                await saveWatchProgress({
                     ...currentProgress,
                     timeSpentSeconds: (currentProgress.timeSpentSeconds || 0) + 10,
                     updatedAt: new Date().toISOString()
@@ -199,10 +207,11 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
     // Auto complete tracking (5 mins)
     useEffect(() => {
         if (!loading && currentEpisode && series) {
-            autoCompleteTimerRef.current = setTimeout(() => {
-                markEpisodeWatched(seriesId, seasonNumber, episodeNumber)
+            autoCompleteTimerRef.current = setTimeout(async () => {
+                await markEpisodeWatched(seriesId, seasonNumber, episodeNumber)
+                const epListUrl = await getWatchedEpisodes(seriesId);
 
-                saveWatchProgress({
+                await saveWatchProgress({
                     tmdbId: seriesId,
                     type: 'dizi',
                     title: series.name,
@@ -212,7 +221,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                     episode: episodeNumber,
                     episodeTitle: currentEpisode.name,
                     totalEpisodes: series.number_of_episodes,
-                    watchedEpisodes: getWatchedEpisodes(seriesId).length,
+                    watchedEpisodes: epListUrl.length,
                     updatedAt: new Date().toISOString()
                 })
             }, 5 * 60 * 1000)
@@ -419,10 +428,17 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
 
     const handleError = () => {
         setHasError(true)
-        if (sourceIndex < SOURCES.length - 1) {
-            toast.loading(`Otomatik olarak ${SOURCES[sourceIndex + 1].name}'a geçiliyor...`, { duration: 2000 })
+        // Sonraki engellenmeış kaynağı bul
+        let nextIndex = sourceIndex + 1
+        while (nextIndex < SOURCES.length && isSourceBlocked(SOURCES[nextIndex].id)) {
+            nextIndex++
+        }
+
+        if (nextIndex < SOURCES.length) {
+            toast.loading(`${SOURCES[sourceIndex].name} yüklenemedi, ${SOURCES[nextIndex].name} deneniyor...`, { duration: 2000 })
+            const target = nextIndex
             setTimeout(() => {
-                setSourceIndex(prev => prev + 1)
+                setSourceIndex(target)
                 setHasError(false)
             }, 2000)
         } else {
@@ -431,14 +447,14 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
         }
     }
 
-    const handleWatchlist = () => {
+    const handleWatchlist = async () => {
         if (!series) return;
         if (inWatchlist) {
-            removeFromWatchlist(seriesId, "dizi");
+            await removeFromWatchlist(seriesId, "dizi");
             setInWatchlist(false);
             toast.success("Koleksiyondan çıkarıldı");
         } else {
-            addToWatchlist({
+            await addToWatchlist({
                 id: seriesId,
                 type: "dizi",
                 title: series.name,
@@ -450,14 +466,14 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
         }
     };
 
-    const handleWatched = () => {
+    const handleWatched = async () => {
         if (!series) return;
         if (seriesWatched) {
-            removeFromWatched(seriesId, "dizi");
+            await removeFromWatched(seriesId, "dizi");
             setSeriesWatched(false);
             toast.success("İzlenenlerden çıkarıldı");
         } else {
-            markAsWatched({
+            await markAsWatched({
                 id: seriesId,
                 type: "dizi",
                 title: series.name,
@@ -599,6 +615,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                         allSourcesFailed={allSourcesFailed}
                         onAddToWatchlist={handleWatchlist}
                         inWatchlist={inWatchlist}
+                        activeSourceId={SOURCES[sourceIndex]?.id}
                     />
                 </div>
             </section>
@@ -754,29 +771,15 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                         <div className="flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar">
                             {seasonData?.episodes.map(ep => {
                                 const isCurrent = ep.episode_number === episodeNumber && selectedSeason === seasonNumber
-                                const watched = isEpisodeWatched(seriesId, selectedSeason, ep.episode_number)
-
                                 return (
-                                    <button
+                                    <EpisodeRow
                                         key={ep.id}
-                                        onClick={() => goToEpisode(selectedSeason, ep.episode_number)}
-                                        className={`flex items-center justify-between p-3 border-b border-border/50 text-left transition-colors last:border-0
-                                            ${isCurrent ? 'bg-bg-hover border-l-4 border-l-purple' : 'hover:bg-bg-hover border-l-4 border-l-transparent'}
-                                            ${watched && !isCurrent ? 'text-text-muted' : 'text-text-primary'}
-                                        `}
-                                    >
-                                        <div className="flex items-center gap-3 overflow-hidden flex-1">
-                                            <span className="text-xs font-medium bg-bg px-1.5 py-0.5 rounded text-text-secondary min-w-[40px] text-center">
-                                                S{selectedSeason}E{ep.episode_number}
-                                            </span>
-                                            <span className="text-sm truncate">
-                                                {ep.name || `Bölüm ${ep.episode_number}`}
-                                            </span>
-                                        </div>
-                                        {watched && (
-                                            <CheckCircle2 size={16} className="text-success ml-2 flex-shrink-0" />
-                                        )}
-                                    </button>
+                                        ep={ep}
+                                        seriesId={seriesId}
+                                        selectedSeason={selectedSeason}
+                                        isCurrent={isCurrent}
+                                        goToEpisode={goToEpisode}
+                                    />
                                 )
                             })}
                         </div>
@@ -861,5 +864,50 @@ function ActorCard({ actor }: { actor: TMDBCastMember }) {
                 {actor.name}
             </p>
         </Link>
+    );
+}
+
+function EpisodeRow({
+    ep,
+    seriesId,
+    selectedSeason,
+    isCurrent,
+    goToEpisode
+}: {
+    ep: TMDBEpisode;
+    seriesId: string;
+    selectedSeason: number;
+    isCurrent: boolean;
+    goToEpisode: (s: number, e: number) => void;
+}) {
+    const [watched, setWatched] = useState(false);
+
+    useEffect(() => {
+        async function fetchWatched() {
+            setWatched(await isEpisodeWatched(seriesId, selectedSeason, ep.episode_number));
+        }
+        fetchWatched();
+    }, [seriesId, selectedSeason, ep.episode_number]);
+
+    return (
+        <button
+            onClick={() => goToEpisode(selectedSeason, ep.episode_number)}
+            className={`flex items-center justify-between p-3 border-b border-border/50 text-left transition-colors last:border-0
+                ${isCurrent ? 'bg-bg-hover border-l-4 border-l-purple' : 'hover:bg-bg-hover border-l-4 border-l-transparent'}
+                ${watched && !isCurrent ? 'text-text-muted' : 'text-text-primary'}
+            `}
+        >
+            <div className="flex items-center gap-3 overflow-hidden flex-1">
+                <span className="text-xs font-medium bg-bg px-1.5 py-0.5 rounded text-text-secondary min-w-[40px] text-center">
+                    S{selectedSeason}E{ep.episode_number}
+                </span>
+                <span className="text-sm truncate">
+                    {ep.name || `Bölüm ${ep.episode_number}`}
+                </span>
+            </div>
+            {watched && (
+                <CheckCircle2 size={16} className="text-success ml-2 flex-shrink-0" />
+            )}
+        </button>
     );
 }

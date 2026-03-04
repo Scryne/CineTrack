@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from '@/lib/logger';
+
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -32,7 +34,7 @@ import {
     getAllRatings,
     addToWatchlist,
     isInWatchlist,
-} from "@/lib/storage";
+} from "@/lib/db";
 import type { WatchedItem, RatingItem } from "@/types";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -141,7 +143,7 @@ export default function OnerilerPage() {
     // DATA FETCHING
     // ========================================
     const loadPersonalized = useCallback(async () => {
-        const watched = getWatched();
+        const watched = await getWatched();
         if (watched.length === 0) return;
 
         const genreCount: Record<number, { count: number; name: string }> = {};
@@ -193,7 +195,7 @@ export default function OnerilerPage() {
     }, []);
 
     const loadRecommended = useCallback(async () => {
-        const watched = getWatched();
+        const watched = await getWatched();
         if (watched.length === 0) return;
 
         // Son 3 izlenen içeriğin adlarını ve onlar için ayrı satırlar oluştur.
@@ -242,7 +244,7 @@ export default function OnerilerPage() {
                 const randomItem = trends[Math.floor(Math.random() * trends.length)];
 
                 const mType = (randomItem as TMDBMovieResult).title ? "film" : "dizi";
-                const isWatchlisted = isInWatchlist(randomItem.id.toString(), mType);
+                const isWatchlisted = await isInWatchlist(randomItem.id.toString(), mType);
 
                 setDiscoveryItem({
                     ...randomItem,
@@ -252,16 +254,16 @@ export default function OnerilerPage() {
                 setAddedToList(isWatchlisted);
             }
         } catch (error) {
-            console.error(error);
+            logger.error('Rastgele keşif hatası', error);
         } finally {
             setDiscoveryLoading(false);
         }
     }, []);
 
-    const handleAddToList = useCallback(() => {
+    const handleAddToList = useCallback(async () => {
         if (!discoveryItem || addedToList) return;
         const mediaType = getMediaType(discoveryItem);
-        addToWatchlist({
+        await addToWatchlist({
             id: discoveryItem.id.toString(),
             type: mediaType,
             title: getTitle(discoveryItem),
@@ -271,8 +273,8 @@ export default function OnerilerPage() {
         setAddedToList(true);
     }, [discoveryItem, addedToList]);
 
-    const loadHighRated = useCallback(() => {
-        const rats = getAllRatings();
+    const loadHighRated = useCallback(async () => {
+        const rats = await getAllRatings();
         const highRated = rats.filter((r) => r.rating >= 8).sort((a, b) => b.rating - a.rating);
         setHighRatedItems(highRated);
     }, []);
@@ -300,8 +302,7 @@ export default function OnerilerPage() {
     useEffect(() => {
         async function init() {
             setLoading(true);
-            await Promise.all([loadPersonalized(), loadRecommended()]);
-            loadHighRated();
+            await Promise.all([loadPersonalized(), loadRecommended(), loadHighRated()]);
             // Başlangıçta bir rastgele de getirelim (arkada yüklensin)
             pickRandom();
             setLoading(false);

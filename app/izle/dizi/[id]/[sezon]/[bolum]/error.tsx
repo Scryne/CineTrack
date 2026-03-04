@@ -1,5 +1,7 @@
 'use client';
 
+import { logger } from '@/lib/logger';
+
 
 
 export default function Error({
@@ -9,7 +11,7 @@ export default function Error({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
-    console.error("PAGE CRASH:", error);
+    logger.error('PAGE CRASH', error);
     return (
         <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 bg-bg-primary text-text-primary">
             <h2 className="text-2xl font-bold mb-2">Bir şeyler ters gitti (Dizi İzleme)</h2>

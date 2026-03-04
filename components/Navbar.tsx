@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getWatchlist } from "@/lib/storage";
+import { getWatchlist } from "@/lib/db";
 import { searchMulti, posterUrl } from "@/lib/tmdb";
 import type { TMDBMultiSearchResult } from "@/lib/tmdb";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +14,6 @@ import {
     Library,
     Tv2,
     Compass,
-    BarChart2,
     Search,
     UserCircle2,
     Menu,
@@ -22,9 +21,13 @@ import {
     Clapperboard,
     Film,
     Tv,
-    History
+    History,
+    LogIn,
+    LogOut
 } from "lucide-react";
 import PWAInstallButton from "./PWAInstallButton";
+import { useUser } from "@/hooks/useUser";
+import Button from "./ui/Button";
 
 // --- Nav linkleri ---
 const navLinks = [
@@ -33,12 +36,12 @@ const navLinks = [
     { href: "/dizilerim", label: "Dizilerim", icon: Tv2 },
     { href: "/kesif", label: "Keşfet", icon: Compass },
     { href: "/gecmis", label: "Geçmiş", icon: History },
-    { href: "/istatistikler", label: "İstatistikler", icon: BarChart2 },
 ];
 
 export default function Navbar() {
     const pathname = usePathname();
     const router = useRouter();
+    const { user, loading, signOut } = useUser();
 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
@@ -60,32 +63,33 @@ export default function Navbar() {
     }, []);
 
     // --- Watchlist count ---
+    const fetchWatchlistCount = useCallback(async () => {
+        const list = await getWatchlist();
+        setWatchlistCount(list.length);
+    }, []);
+
     useEffect(() => {
-        setWatchlistCount(getWatchlist().length);
-        const handleStorage = (e: StorageEvent) => {
-            if (e.key === "cinetrack_watchlist") {
-                setWatchlistCount(getWatchlist().length);
-            }
-        };
-        const handleCustomStorage = () => {
-            setWatchlistCount(getWatchlist().length);
-        };
+        fetchWatchlistCount();
+        const handleStorage = () => fetchWatchlistCount();
+        const handleSupabaseUpdate = () => fetchWatchlistCount();
+
         window.addEventListener("storage", handleStorage);
-        window.addEventListener("storage", handleCustomStorage);
+        window.addEventListener("cinetrack_supabase_update", handleSupabaseUpdate);
+
         return () => {
             window.removeEventListener("storage", handleStorage);
-            window.removeEventListener("storage", handleCustomStorage);
+            window.removeEventListener("cinetrack_supabase_update", handleSupabaseUpdate);
         };
-    }, []);
+    }, [fetchWatchlistCount, user]);
 
     // --- Update watchlist count + close mobile on route change ---
     useEffect(() => {
-        setWatchlistCount(getWatchlist().length);
+        fetchWatchlistCount();
         setIsMobileMenuOpen(false);
         setIsSearchOpen(false);
         setSearchQuery("");
         setSearchResults([]);
-    }, [pathname]);
+    }, [pathname, fetchWatchlistCount]);
 
     // --- Focus search input when opening ---
     useEffect(() => {
@@ -228,17 +232,50 @@ export default function Navbar() {
                             <Search size={20} />
                         </button>
 
-                        {/* Profil butonu */}
-                        <Link
-                            href="/profil"
-                            className={`p-2 rounded-lg transition-colors duration-200 ${isActive("/profil")
-                                ? "text-purple-DEFAULT"
-                                : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
-                                }`}
-                            aria-label="Profil"
-                        >
-                            <UserCircle2 size={20} />
-                        </Link>
+                        {/* Profil veya Giriş butonu */}
+                        {loading ? (
+                            <div className="w-9 h-9 rounded-full bg-border animate-pulse shrink-0" />
+                        ) : user ? (
+                            <div className="relative group/dropdown">
+                                <button
+                                    className="flex items-center gap-2 p-1.5 rounded-full hover:bg-bg-hover transition-colors"
+                                    aria-label="Profil Menüsü"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-purple-DEFAULT/20 flex items-center justify-center border border-purple-DEFAULT/30 shrink-0">
+                                        <UserCircle2 size={18} className="text-purple-DEFAULT" />
+                                    </div>
+                                    <span className="text-sm font-medium text-text-primary hidden md:block max-w-[100px] truncate">
+                                        {user.user_metadata?.username || user.email?.split('@')[0] || "User"}
+                                    </span>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all origin-top-right z-50 overflow-hidden">
+                                    <Link href="/profil" className="flex items-center gap-2 px-4 py-3 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors">
+                                        <UserCircle2 size={16} /> Profil
+                                    </Link>
+                                    <div className="border-t border-border" />
+                                    <button
+                                        onClick={async () => {
+                                            await signOut();
+                                            router.push("/auth");
+                                        }}
+                                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors text-left"
+                                    >
+                                        <LogOut size={16} /> Çıkış Yap
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <Link href="/auth">
+                                <Button variant="primary" size="sm" icon={LogIn} className="hidden sm:flex rounded-full">
+                                    Giriş Yap
+                                </Button>
+                                <Button variant="primary" size="sm" className="sm:hidden w-9 h-9 rounded-full p-0 flex items-center justify-center">
+                                    <LogIn size={16} className="m-0" />
+                                </Button>
+                            </Link>
+                        )}
 
                         {/* PWA İndir Butonu */}
                         <div className="hidden sm:block">
@@ -443,17 +480,46 @@ export default function Navbar() {
 
                                 {/* Extra mobile links */}
                                 <div className="mt-3 pt-3 border-t border-border">
-                                    <Link
-                                        href="/profil"
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive("/profil")
-                                            ? "text-purple-DEFAULT bg-purple-DEFAULT/10"
-                                            : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
-                                            }`}
-                                    >
-                                        <UserCircle2 size={18} />
-                                        Profilim
-                                    </Link>
+                                    {!loading && (
+                                        user ? (
+                                            <>
+                                                <Link
+                                                    href="/profil"
+                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive("/profil")
+                                                        ? "text-purple-DEFAULT bg-purple-DEFAULT/10"
+                                                        : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
+                                                        }`}
+                                                >
+                                                    <UserCircle2 size={18} />
+                                                    Profilim
+                                                </Link>
+                                                <button
+                                                    onClick={async () => {
+                                                        setIsMobileMenuOpen(false);
+                                                        await signOut();
+                                                        router.push("/auth");
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-red-500 hover:bg-red-500/10"
+                                                >
+                                                    <LogOut size={18} />
+                                                    Çıkış Yap
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <Link
+                                                href="/auth"
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive("/auth")
+                                                    ? "text-purple-DEFAULT bg-purple-DEFAULT/10"
+                                                    : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
+                                                    }`}
+                                            >
+                                                <LogIn size={18} />
+                                                Giriş Yap
+                                            </Link>
+                                        )
+                                    )}
                                 </div>
 
                                 {/* Install PWA (Mobile) */}

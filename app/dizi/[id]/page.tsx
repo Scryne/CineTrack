@@ -24,17 +24,13 @@ import {
 import { getSeriesDetail, getSeriesExternalIds, getWatchProviders, posterUrl, backdropUrl, profileUrl, BLUR_PLACEHOLDER } from "@/lib/tmdb";
 import { getRatings } from "@/lib/omdb";
 import {
-    addToWatchlist,
-    removeFromWatchlist,
-    isInWatchlist,
-    markAsWatched,
-    removeFromWatched,
-    isWatched,
+    getWatchProgress,
     getWatchedEpisodes,
     markAllEpisodesWatched,
     removeAllEpisodesWatched,
-    getWatchProgress,
-} from "@/lib/storage";
+} from "@/lib/db";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useWatched } from "@/hooks/useWatched";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -55,6 +51,77 @@ const STATUS_MAP: Record<string, { label: string; variant: "purple" | "success" 
     Pilot: { label: "Pilot", variant: "muted" },
 };
 
+function SeasonCard({ season, seriesId }: { season: TMDBSeasonSummary, seriesId: string }) {
+    const seasonEpCount = season.episode_count || 0;
+    const [seasonWatchedCount, setSeasonWatchedCount] = useState(0);
+
+    useEffect(() => {
+        async function fetchEps() {
+            const allEps = await getWatchedEpisodes(seriesId);
+            const seasonEps = allEps.filter((ep) => ep.seasonNumber === season.season_number);
+            setSeasonWatchedCount(seasonEps.length);
+        }
+        fetchEps();
+    }, [season.season_number, seriesId]);
+
+    const seasonProgress = seasonEpCount > 0
+        ? Math.round((seasonWatchedCount / seasonEpCount) * 100)
+        : 0;
+    const isComplete = seasonProgress === 100 && seasonEpCount > 0;
+
+    return (
+        <Link
+            href={`/dizi/${seriesId}/sezon/${season.season_number}`}
+        >
+            <Card hover className="group overflow-hidden h-full">
+                <div className="relative w-full aspect-[2/3] overflow-hidden bg-bg-card">
+                    {season.poster_path ? (
+                        <Image
+                            src={posterUrl(season.poster_path)}
+                            alt={season.name}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="200px"
+                            placeholder="blur"
+                            blurDataURL={BLUR_PLACEHOLDER}
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                            <Tv size={40} className="text-text-muted" />
+                        </div>
+                    )}
+                    {/* Completed overlay */}
+                    {isComplete && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <CheckCircle2 size={48} className="text-success" />
+                        </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
+                        <p className="text-xs text-gray-300">
+                            {season.episode_count} Bölüm
+                        </p>
+                    </div>
+                </div>
+                <div className="p-3">
+                    <h3 className="text-sm font-semibold text-text-primary group-hover:text-purple transition-colors truncate">
+                        Sezon {season.season_number}
+                    </h3>
+                    <p className="text-xs text-text-muted mb-2">
+                        {season.air_date?.split("-")[0] || "—"}
+                    </p>
+                    {seasonEpCount > 0 && (
+                        <ProgressBar
+                            value={seasonProgress}
+                            className="h-1.5"
+                            color={isComplete ? "success" : "purple"}
+                        />
+                    )}
+                </div>
+            </Card>
+        </Link>
+    );
+}
+
 export default function SeriesDetailPage({
     params,
 }: {
@@ -64,89 +131,86 @@ export default function SeriesDetailPage({
     const [series, setSeries] = useState<TMDBSeriesDetail | null>(null);
     const [ratings, setRatings] = useState<OMDBRatings | null>(null);
     const [loading, setLoading] = useState(true);
-    const [inWatchlist, setInWatchlist] = useState(false);
-    const [watched, setWatched] = useState(false);
     const [watchedEpCount, setWatchedEpCount] = useState(0);
     const [progress, setProgress] = useState<WatchProgress | null>(null);
     const [providers, setProviders] = useState<TMDBWatchProviders | null>(null);
 
+    const { inWatchlist, loading: watchlistLoading, toggle: toggleWatchlist } = useWatchlist(params.id, "dizi");
+
+    const onWatchedToggle = async (newWatchedState: boolean) => {
+        if (!series) return;
+        if (!newWatchedState) {
+            await removeAllEpisodesWatched(params.id);
+            setWatchedEpCount(0);
+        } else {
+            const seasonData = series.seasons
+                .filter((s) => s.season_number > 0)
+                .map((s) => ({ seasonNumber: s.season_number, episodeCount: s.episode_count }));
+            await markAllEpisodesWatched(params.id, seasonData);
+            setWatchedEpCount(series.number_of_episodes || 0);
+        }
+    };
+
+    const { watched, loading: watchedLoading, toggle: toggleWatched } = useWatched(params.id, "dizi");
+
     useEffect(() => {
         async function loadData() {
-            setLoading(true);
-            const data = await getSeriesDetail(params.id);
-            setSeries(data);
+            try {
+                setLoading(true);
+                const data = await getSeriesDetail(params.id);
+                setSeries(data);
 
-            if (data) {
-                document.title = `${data.name} - CineTrack`;
-            }
+                if (data) {
+                    document.title = `${data.name} - CineTrack`;
 
-            if (data) {
-                const externalIds = await getSeriesExternalIds(params.id);
-                if (externalIds?.imdb_id) {
-                    const omdbData = await getRatings(externalIds.imdb_id);
-                    setRatings(omdbData);
+                    try {
+                        const externalIds = await getSeriesExternalIds(params.id);
+                        if (externalIds?.imdb_id) {
+                            const omdbData = await getRatings(externalIds.imdb_id);
+                            setRatings(omdbData);
+                        }
+                    } catch (e) {
+                        console.error("External IDs or OMDB error:", e);
+                    }
+
+                    try {
+                        const eps = await getWatchedEpisodes(params.id);
+                        setWatchedEpCount(eps.length);
+                    } catch (e) {
+                        console.error("Watched episodes loading error:", e);
+                    }
+
+                    try {
+                        // WatchProgress kontrolü
+                        const wp = await getWatchProgress(params.id, "dizi");
+                        setProgress(wp);
+                    } catch (e) {
+                        console.error("Watch progress loading error:", e);
+                    }
+
+                    try {
+                        // Watch Providers
+                        const wpData = await getWatchProviders(params.id, "dizi");
+                        setProviders(wpData);
+                    } catch (e) {
+                        console.error("Watch providers error:", e);
+                    }
                 }
-
-                setInWatchlist(isInWatchlist(params.id, "dizi"));
-                setWatched(isWatched(params.id, "dizi"));
-                const eps = getWatchedEpisodes(params.id);
-                setWatchedEpCount(eps.length);
-
-                // WatchProgress kontrolü
-                const wp = getWatchProgress(params.id, "dizi");
-                setProgress(wp);
-
-                // Watch Providers
-                const wpData = await getWatchProviders(params.id, "dizi");
-                setProviders(wpData);
+            } catch (err) {
+                console.error("Dizi page error:", err);
+            } finally {
+                setLoading(false);
             }
-
-            setLoading(false);
         }
         loadData();
     }, [params.id]);
 
-    const handleWatchlist = () => {
-        if (!series) return;
-        if (inWatchlist) {
-            removeFromWatchlist(params.id, "dizi");
-            setInWatchlist(false);
-        } else {
-            addToWatchlist({
-                id: params.id,
-                type: "dizi",
-                title: series.name,
-                posterPath: posterUrl(series.poster_path),
-                addedAt: new Date().toISOString(),
-            });
-            setInWatchlist(true);
+    useEffect(() => {
+        if (watched && series && watchedEpCount === 0) {
+            onWatchedToggle(true);
         }
-    };
-
-    const handleWatched = () => {
-        if (!series) return;
-        if (watched) {
-            removeFromWatched(params.id, "dizi");
-            removeAllEpisodesWatched(params.id);
-            setWatched(false);
-            setWatchedEpCount(0);
-        } else {
-            markAsWatched({
-                id: params.id,
-                type: "dizi",
-                title: series.name,
-                posterPath: posterUrl(series.poster_path),
-                watchedAt: new Date().toISOString(),
-            });
-            // Tüm bölümleri izlendi olarak işaretle
-            const seasonData = series.seasons
-                .filter((s) => s.season_number > 0)
-                .map((s) => ({ seasonNumber: s.season_number, episodeCount: s.episode_count }));
-            markAllEpisodesWatched(params.id, seasonData);
-            setWatched(true);
-            setWatchedEpCount(series.number_of_episodes || 0);
-        }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [watched]);
 
     const trailer = series?.videos?.results?.find(
         (v: TMDBVideo) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
@@ -229,10 +293,11 @@ export default function SeriesDetailPage({
                         src={backdropUrl(series.backdrop_path)}
                         alt={series.name}
                         fill
-                        className="object-cover"
+                        className="object-cover text-transparent"
                         priority
                         placeholder="blur"
                         blurDataURL={BLUR_PLACEHOLDER}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                 ) : (
                     <div className="w-full h-full bg-bg-card" />
@@ -261,10 +326,11 @@ export default function SeriesDetailPage({
                                         src={posterUrl(series.poster_path)}
                                         alt={series.name}
                                         fill
-                                        className="object-cover"
+                                        className="object-cover text-transparent"
                                         sizes="220px"
                                         placeholder="blur"
                                         blurDataURL={BLUR_PLACEHOLDER}
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-bg-card flex items-center justify-center text-text-muted">
@@ -390,25 +456,33 @@ export default function SeriesDetailPage({
                                 </motion.div>
 
                                 <motion.div whileTap={{ scale: 0.9 }}>
-                                    <Button
-                                        variant="secondary"
-                                        icon={inWatchlist ? BookmarkCheck : Bookmark}
-                                        onClick={handleWatchlist}
-                                        className={inWatchlist ? "!border-purple !text-purple" : ""}
-                                    >
-                                        {inWatchlist ? "Koleksiyonda" : "Koleksiyona Ekle"}
-                                    </Button>
+                                    {watchlistLoading ? (
+                                        <div className="h-12 w-36 rounded-xl bg-bg-hover animate-pulse" />
+                                    ) : (
+                                        <Button
+                                            variant="secondary"
+                                            icon={inWatchlist ? BookmarkCheck : Bookmark}
+                                            onClick={() => toggleWatchlist({ title: series.name, posterPath: posterUrl(series.poster_path) })}
+                                            className={inWatchlist ? "!border-purple !text-purple" : ""}
+                                        >
+                                            {inWatchlist ? "Koleksiyonda" : "Koleksiyona Ekle"}
+                                        </Button>
+                                    )}
                                 </motion.div>
 
                                 <motion.div whileTap={{ scale: 0.9 }}>
-                                    <Button
-                                        variant={watched ? "primary" : "secondary"}
-                                        icon={Check}
-                                        onClick={handleWatched}
-                                        className={watched ? "!bg-success !border-success" : ""}
-                                    >
-                                        {watched ? "İzlendi" : "İzledim"}
-                                    </Button>
+                                    {watchedLoading ? (
+                                        <div className="h-12 w-36 rounded-xl bg-bg-hover animate-pulse" />
+                                    ) : (
+                                        <Button
+                                            variant={watched ? "primary" : "secondary"}
+                                            icon={Check}
+                                            onClick={() => toggleWatched({ title: series.name, posterPath: posterUrl(series.poster_path) }).then(() => onWatchedToggle(!watched))}
+                                            className={watched ? "!bg-success !border-success" : ""}
+                                        >
+                                            {watched ? "İzlendi" : "İzledim"}
+                                        </Button>
+                                    )}
                                 </motion.div>
                             </div>
                         </motion.div>
@@ -562,70 +636,9 @@ export default function SeriesDetailPage({
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
                             {series.seasons
                                 .filter((s: TMDBSeasonSummary) => s.season_number > 0)
-                                .map((season: TMDBSeasonSummary) => {
-                                    const seasonEpCount = season.episode_count || 0;
-                                    const seasonWatchedEps = getWatchedEpisodes(params.id).filter(
-                                        (ep) => ep.seasonNumber === season.season_number
-                                    );
-                                    const seasonWatchedCount = seasonWatchedEps.length;
-                                    const seasonProgress = seasonEpCount > 0
-                                        ? Math.round((seasonWatchedCount / seasonEpCount) * 100)
-                                        : 0;
-                                    const isComplete = seasonProgress === 100 && seasonEpCount > 0;
-
-                                    return (
-                                        <Link
-                                            key={season.id}
-                                            href={`/dizi/${params.id}/sezon/${season.season_number}`}
-                                        >
-                                            <Card hover className="group overflow-hidden h-full">
-                                                <div className="relative w-full aspect-[2/3] overflow-hidden bg-bg-card">
-                                                    {season.poster_path ? (
-                                                        <Image
-                                                            src={posterUrl(season.poster_path)}
-                                                            alt={season.name}
-                                                            fill
-                                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                            sizes="200px"
-                                                            placeholder="blur"
-                                                            blurDataURL={BLUR_PLACEHOLDER}
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            <Tv size={40} className="text-text-muted" />
-                                                        </div>
-                                                    )}
-                                                    {/* Completed overlay */}
-                                                    {isComplete && (
-                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                                            <CheckCircle2 size={48} className="text-success" />
-                                                        </div>
-                                                    )}
-                                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
-                                                        <p className="text-xs text-gray-300">
-                                                            {season.episode_count} Bölüm
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="p-3">
-                                                    <h3 className="text-sm font-semibold text-text-primary group-hover:text-purple transition-colors truncate">
-                                                        Sezon {season.season_number}
-                                                    </h3>
-                                                    <p className="text-xs text-text-muted mb-2">
-                                                        {season.air_date?.split("-")[0] || "—"}
-                                                    </p>
-                                                    {seasonEpCount > 0 && (
-                                                        <ProgressBar
-                                                            value={seasonProgress}
-                                                            color={isComplete ? "success" : "purple"}
-                                                            size="sm"
-                                                        />
-                                                    )}
-                                                </div>
-                                            </Card>
-                                        </Link>
-                                    );
-                                })}
+                                .map((season: TMDBSeasonSummary) => (
+                                    <SeasonCard key={season.id} season={season} seriesId={params.id} />
+                                ))}
                         </div>
                     </div>
                 </section>

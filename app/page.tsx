@@ -26,9 +26,9 @@ import Input from "@/components/ui/Input";
 import MovieCard from "@/components/MovieCard";
 import SeriesCard from "@/components/SeriesCard";
 import ScrollableRow from "@/components/ui/ScrollableRow";
-import { searchMulti, getTrendingMovies, getTrendingSeries, getMoviesByGenre, posterUrl, backdropUrl } from "@/lib/tmdb";
+import { searchMulti, getTrendingMovies, getTrendingSeries, getMoviesByGenre, getPopularMovies, posterUrl, backdropUrl, getRecommendations } from "@/lib/tmdb";
 import type { TMDBMultiSearchResult, TMDBMovieResult, TMDBSeriesResult } from "@/lib/tmdb";
-import { getRecentlyWatched } from "@/lib/storage";
+import { getRecentlyWatched, getAllRatings } from "@/lib/db";
 import type { WatchProgress } from "@/types/player";
 
 // ==========================================
@@ -69,16 +69,23 @@ export default function Home() {
   // Continue watching state
   const [continueItems, setContinueItems] = useState<WatchProgress[]>([]);
 
+  // Recommendations state
+  const [recommendations, setRecommendations] = useState<(TMDBMovieResult | TMDBSeriesResult)[]>([]);
+  const [recommendationSource, setRecommendationSource] = useState<{ title: string, type: "film" | "dizi" } | null>(null);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+
   // --- Trending verileri yukle ---
   useEffect(() => {
     async function loadTrending() {
       setLoading(true);
-      const [movies, series] = await Promise.all([
+      const [movies, series, popular] = await Promise.all([
         getTrendingMovies(),
         getTrendingSeries(),
+        getPopularMovies(),
       ]);
       setTrendingMovies(movies || []);
       setTrendingSeries(series || []);
+      setGenreMovies(popular || []);
       setLoading(false);
     }
     loadTrending();
@@ -86,8 +93,76 @@ export default function Home() {
 
   // --- Continue watching verileri ---
   useEffect(() => {
-    const items = getRecentlyWatched(6);
-    setContinueItems(items);
+    async function fetchContinueItems() {
+      const items = await getRecentlyWatched(6);
+      setContinueItems(items);
+    }
+    fetchContinueItems();
+  }, []);
+
+  // --- Onerileri (Sana Ozel) Yukle ---
+  useEffect(() => {
+    async function loadRecommendations() {
+      try {
+        setLoadingRecommendations(true);
+        // 1. Get user ratings
+        const ratings = await getAllRatings();
+        // 2. Filter high ratings (e.g. >= 7)
+        const highRatings = ratings.filter(r => (r.rating || 0) >= 7);
+
+        let finalRecs: (TMDBMovieResult | TMDBSeriesResult)[] = [];
+        let finalSource: { title: string, type: "film" | "dizi" } | null = null;
+
+        // Try getting recommendations up to 3 times if we have high ratings
+        if (highRatings.length > 0) {
+          const shuffle = [...highRatings].sort(() => 0.5 - Math.random());
+          for (const item of shuffle.slice(0, 3)) {
+            const tmdbIdStr = item.tmdbId ? String(item.tmdbId) : "";
+            if (!tmdbIdStr) continue;
+
+            const recs = await getRecommendations(tmdbIdStr, item.type);
+            if (recs && recs.length > 5) {
+              finalRecs = recs;
+              finalSource = { title: item.title || "İçerik", type: item.type };
+              break;
+            }
+          }
+        }
+
+        // Fallback to recently watched if high ratings didn't yield results
+        if (finalRecs.length === 0) {
+          const recent = await getRecentlyWatched(3);
+          for (const item of recent) {
+            const tmdbIdStr = item.tmdbId ? String(item.tmdbId) : "";
+            if (!tmdbIdStr) continue;
+
+            const recs = await getRecommendations(tmdbIdStr, item.type);
+            if (recs && recs.length > 5) {
+              finalRecs = recs;
+              finalSource = { title: item.title || "İçerik", type: item.type };
+              break;
+            }
+          }
+        }
+
+        if (finalSource && finalRecs.length > 0) {
+          setRecommendationSource(finalSource);
+          setRecommendations(finalRecs.slice(0, 15));
+        } else {
+          // Tamamen bos ise trendleri onerme listesine koyalim
+          const movies = await getTrendingMovies();
+          if (movies && movies.length > 0) {
+            setRecommendationSource({ title: "Popüler İçerikler", type: "film" });
+            setRecommendations(movies.slice(0, 15));
+          }
+        }
+      } catch (err) {
+        console.error("Error loading recommendations", err);
+      } finally {
+        setLoadingRecommendations(false);
+      }
+    }
+    loadRecommendations();
   }, []);
 
   // --- Arama (debounce 400ms) ---
@@ -130,7 +205,10 @@ export default function Home() {
   const handleGenreClick = async (genreId: number) => {
     if (selectedGenre === genreId) {
       setSelectedGenre(null);
-      setGenreMovies([]);
+      setLoadingGenre(true);
+      const popular = await getPopularMovies();
+      setGenreMovies(popular || []);
+      setLoadingGenre(false);
       return;
     }
     setSelectedGenre(genreId);
@@ -246,8 +324,9 @@ export default function Home() {
                               src={posterUrl(result.poster_path)}
                               alt={result.title || ""}
                               fill
-                              className="object-cover"
+                              className="object-cover text-transparent"
                               sizes="40px"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-[10px] text-text-muted">
@@ -291,8 +370,9 @@ export default function Home() {
                               src={posterUrl(result.poster_path)}
                               alt={result.name || ""}
                               fill
-                              className="object-cover"
+                              className="object-cover text-transparent"
                               sizes="40px"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-[10px] text-text-muted">
@@ -355,8 +435,9 @@ export default function Home() {
                         src={item.backdropPath ? backdropUrl(item.backdropPath) : posterUrl(item.posterPath)}
                         alt={item.title}
                         fill
-                        className="object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                        className="object-cover opacity-60 group-hover:opacity-80 transition-opacity text-transparent"
                         sizes="280px"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
@@ -396,6 +477,39 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
+              ))}
+            </ScrollableRow>
+          </div>
+        </section>
+      )}
+
+      {/* ========================================== */}
+      {/* SANA OZEL KESFET                           */}
+      {/* ========================================== */}
+      {!loadingRecommendations && recommendations.length > 0 && recommendationSource && (
+        <section className="px-4 sm:px-6 lg:px-8" style={{ paddingTop: "80px" }}>
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col mb-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={20} className="text-purple-light" />
+                <h2 className="font-display text-2xl font-bold text-text-primary">
+                  Sana Özel Keşfet
+                </h2>
+              </div>
+              <p className="text-sm text-text-secondary">
+                <span className="text-purple-light font-medium">&quot;{recommendationSource.title}&quot;</span> {recommendationSource.type === "film" ? "filmini" : "dizisini"} {recommendationSource.type === "film" ? "izleyenler/beğenenler bunu da beğendi" : "beğenenler bunu da izledi"}
+              </p>
+            </div>
+
+            <ScrollableRow>
+              {recommendations.map((item) => (
+                <div key={`${recommendationSource.type}-${item.id}`}>
+                  {'title' in item ? (
+                    <MovieCard movie={item as TMDBMovieResult} />
+                  ) : (
+                    <SeriesCard series={item as TMDBSeriesResult} />
+                  )}
+                </div>
               ))}
             </ScrollableRow>
           </div>
@@ -515,49 +629,46 @@ export default function Home() {
 
           {/* Ture Gore Sonuclar */}
           <AnimatePresence mode="wait">
-            {selectedGenre && (
-              <motion.div
-                key={selectedGenre}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="pt-6">
-                  {loadingGenre ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                      {Array.from({ length: 12 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="aspect-[2/3] bg-bg-card rounded-xl animate-pulse"
-                        />
-                      ))}
-                    </div>
-                  ) : genreMovies.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                      {genreMovies.map((movie, index) => (
-                        <motion.div
-                          key={movie.id}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{
-                            duration: 0.3,
-                            delay: index * 0.03,
-                          }}
-                        >
-                          <MovieCard movie={movie} />
-                        </motion.div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-text-secondary text-center py-12">
-                      Bu türde film bulunamadı.
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            )}
+            <motion.div
+              key={selectedGenre || 'popular'}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+              <div className="pt-6">
+                {loadingGenre ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="aspect-[2/3] bg-bg-card rounded-xl animate-pulse"
+                      />
+                    ))}
+                  </div>
+                ) : genreMovies.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    {genreMovies.map((movie, index) => (
+                      <motion.div
+                        key={movie.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          duration: 0.3,
+                          delay: index * 0.03,
+                        }}
+                      >
+                        <MovieCard movie={movie} />
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-text-secondary text-center py-12">
+                    Film bulunamadı.
+                  </p>
+                )}
+              </div>
+            </motion.div>
           </AnimatePresence>
         </div>
       </section>

@@ -19,7 +19,7 @@ import {
     markEpisodeWatched,
     unmarkEpisodeWatched,
     isEpisodeWatched,
-} from "@/lib/storage";
+} from "@/lib/db";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -40,16 +40,20 @@ export default function SeasonDetailPage({
 
     const seasonNumber = parseInt(params.seasonId, 10);
 
-    const refreshWatchedMap = useCallback(() => {
+    const refreshWatchedMap = useCallback(async () => {
         if (!season) return;
         const map: Record<string, boolean> = {};
-        season.episodes.forEach((ep: TMDBEpisode) => {
-            map[`${ep.season_number}-${ep.episode_number}`] = isEpisodeWatched(
+
+        const promises = season.episodes.map(async (ep: TMDBEpisode) => {
+            const watched = await isEpisodeWatched(
                 params.id,
                 ep.season_number,
                 ep.episode_number
             );
+            map[`${ep.season_number}-${ep.episode_number}`] = watched;
         });
+
+        await Promise.all(promises);
         setWatchedMap(map);
     }, [season, params.id]);
 
@@ -72,12 +76,12 @@ export default function SeasonDetailPage({
         refreshWatchedMap();
     }, [refreshWatchedMap]);
 
-    const toggleEpisode = (ep: TMDBEpisode) => {
+    const toggleEpisode = async (ep: TMDBEpisode) => {
         const key = `${ep.season_number}-${ep.episode_number}`;
         if (watchedMap[key]) {
-            unmarkEpisodeWatched(params.id, ep.season_number, ep.episode_number);
+            await unmarkEpisodeWatched(params.id, ep.season_number, ep.episode_number);
         } else {
-            markEpisodeWatched(params.id, ep.season_number, ep.episode_number);
+            await markEpisodeWatched(params.id, ep.season_number, ep.episode_number);
             confetti({
                 particleCount: 60,
                 spread: 55,
@@ -89,13 +93,18 @@ export default function SeasonDetailPage({
         setWatchedMap((prev) => ({ ...prev, [key]: !prev[key] }));
     };
 
-    const markAllWatched = () => {
+    const markAllWatched = async () => {
         if (!season) return;
-        season.episodes.forEach((ep: TMDBEpisode) => {
-            if (!isEpisodeWatched(params.id, ep.season_number, ep.episode_number)) {
-                markEpisodeWatched(params.id, ep.season_number, ep.episode_number);
+
+        const promises = season.episodes.map(async (ep: TMDBEpisode) => {
+            const watched = await isEpisodeWatched(params.id, ep.season_number, ep.episode_number);
+            if (!watched) {
+                await markEpisodeWatched(params.id, ep.season_number, ep.episode_number);
             }
         });
+
+        await Promise.all(promises);
+
         confetti({
             particleCount: 150,
             spread: 90,
@@ -103,17 +112,21 @@ export default function SeasonDetailPage({
             colors: ["#7B5CF0", "#9D7FF4", "#22C55E", "#ffffff"],
             zIndex: 9999,
         });
-        refreshWatchedMap();
+        await refreshWatchedMap();
     };
 
-    const resetSeason = () => {
+    const resetSeason = async () => {
         if (!season) return;
-        season.episodes.forEach((ep: TMDBEpisode) => {
-            if (isEpisodeWatched(params.id, ep.season_number, ep.episode_number)) {
-                unmarkEpisodeWatched(params.id, ep.season_number, ep.episode_number);
+
+        const promises = season.episodes.map(async (ep: TMDBEpisode) => {
+            const watched = await isEpisodeWatched(params.id, ep.season_number, ep.episode_number);
+            if (watched) {
+                await unmarkEpisodeWatched(params.id, ep.season_number, ep.episode_number);
             }
         });
-        refreshWatchedMap();
+
+        await Promise.all(promises);
+        await refreshWatchedMap();
     };
 
     const formatRuntime = (minutes: number | null) => {
@@ -170,10 +183,11 @@ export default function SeasonDetailPage({
                                 src={posterUrl(season.poster_path)}
                                 alt={season.name}
                                 fill
-                                className="object-cover"
+                                className="object-cover text-transparent"
                                 sizes="150px"
                                 placeholder="blur"
                                 blurDataURL={BLUR_PLACEHOLDER}
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                         </div>
                     )}
@@ -256,10 +270,11 @@ export default function SeasonDetailPage({
                                                     src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
                                                     alt={ep.name}
                                                     fill
-                                                    className="object-cover"
+                                                    className="object-cover text-transparent"
                                                     sizes="160px"
                                                     placeholder="blur"
                                                     blurDataURL={BLUR_PLACEHOLDER}
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center">

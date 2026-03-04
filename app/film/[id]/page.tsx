@@ -25,14 +25,10 @@ import {
 import { getMovieDetail, getWatchProviders, posterUrl, backdropUrl, profileUrl, BLUR_PLACEHOLDER } from "@/lib/tmdb";
 import { getRatings } from "@/lib/omdb";
 import {
-    addToWatchlist,
-    removeFromWatchlist,
-    isInWatchlist,
-    markAsWatched,
-    removeFromWatched,
-    isWatched,
     getWatchProgress,
-} from "@/lib/storage";
+} from "@/lib/db";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useWatched } from "@/hooks/useWatched";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import RatingPicker from "@/components/RatingPicker";
@@ -51,76 +47,53 @@ export default function FilmDetailPage({
     const [movie, setMovie] = useState<TMDBMovieDetail | null>(null);
     const [ratings, setRatings] = useState<OMDBRatings | null>(null);
     const [loading, setLoading] = useState(true);
-    const [inWatchlist, setInWatchlist] = useState(false);
-    const [watched, setWatched] = useState(false);
     const [progress, setProgress] = useState<WatchProgress | null>(null);
     const [providers, setProviders] = useState<TMDBWatchProviders | null>(null);
+
+    const { inWatchlist, loading: watchlistLoading, toggle: toggleWatchlist } = useWatchlist(params.id, "film");
+    const { watched, loading: watchedLoading, toggle: toggleWatched } = useWatched(params.id, "film");
 
 
     useEffect(() => {
         async function loadData() {
-            setLoading(true);
-            const movieData = await getMovieDetail(params.id);
-            setMovie(movieData);
+            try {
+                setLoading(true);
+                const movieData = await getMovieDetail(params.id);
+                setMovie(movieData);
 
-            if (movieData) {
-                document.title = `${movieData.title} - CineTrack`;
+                if (movieData) {
+                    document.title = `${movieData.title} - CineTrack`;
+                }
+
+                if (movieData?.imdb_id) {
+                    const omdbData = await getRatings(movieData.imdb_id);
+                    setRatings(omdbData);
+                }
+
+                try {
+                    // WatchProgress kontrolü
+                    const wp = await getWatchProgress(params.id, "film");
+                    setProgress(wp);
+                } catch (e) {
+                    console.error("Watch progress loading error", e);
+                }
+
+                try {
+                    // Watch Providers
+                    const wp2 = await getWatchProviders(params.id, "film");
+                    setProviders(wp2);
+                } catch (e) {
+                    console.error("Watch providers loading error", e);
+                }
+
+            } catch (err) {
+                console.error("Film page error:", err);
+            } finally {
+                setLoading(false);
             }
-
-            if (movieData?.imdb_id) {
-                const omdbData = await getRatings(movieData.imdb_id);
-                setRatings(omdbData);
-            }
-
-            setInWatchlist(isInWatchlist(params.id, "film"));
-            setWatched(isWatched(params.id, "film"));
-
-            // WatchProgress kontrolü
-            const wp = getWatchProgress(params.id, "film");
-            setProgress(wp);
-
-            // Watch Providers
-            const wp2 = await getWatchProviders(params.id, "film");
-            setProviders(wp2);
-
-            setLoading(false);
         }
         loadData();
     }, [params.id]);
-
-    const handleWatchlist = () => {
-        if (!movie) return;
-        if (inWatchlist) {
-            removeFromWatchlist(params.id, "film");
-            setInWatchlist(false);
-        } else {
-            addToWatchlist({
-                id: params.id,
-                type: "film",
-                title: movie.title,
-                posterPath: posterUrl(movie.poster_path),
-                addedAt: new Date().toISOString(),
-            });
-            setInWatchlist(true);
-        }
-    };
-
-    const handleWatched = () => {
-        if (!movie) return;
-        if (watched) {
-            removeFromWatched(params.id, "film");
-            setWatched(false);
-        } else {
-            markAsWatched({
-                id: params.id,
-                type: "film",
-                title: movie.title,
-                posterPath: posterUrl(movie.poster_path),
-                watchedAt: new Date().toISOString(),
-            });
-            setWatched(true);
-        }
-    };
 
     const formatRuntime = (minutes: number | null) => {
         if (!minutes) return "—";
@@ -207,10 +180,11 @@ export default function FilmDetailPage({
                         src={backdropUrl(movie.backdrop_path)}
                         alt={movie.title}
                         fill
-                        className="object-cover"
+                        className="object-cover text-transparent"
                         priority
                         placeholder="blur"
                         blurDataURL={BLUR_PLACEHOLDER}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                 ) : (
                     <div className="w-full h-full bg-bg-card" />
@@ -240,10 +214,11 @@ export default function FilmDetailPage({
                                         src={posterUrl(movie.poster_path)}
                                         alt={movie.title}
                                         fill
-                                        className="object-cover"
+                                        className="object-cover text-transparent"
                                         sizes="220px"
                                         placeholder="blur"
                                         blurDataURL={BLUR_PLACEHOLDER}
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-bg-card flex items-center justify-center text-text-muted">
@@ -360,25 +335,33 @@ export default function FilmDetailPage({
                                 </motion.div>
 
                                 <motion.div whileTap={{ scale: 0.9 }}>
-                                    <Button
-                                        variant="secondary"
-                                        icon={inWatchlist ? BookmarkCheck : Bookmark}
-                                        onClick={handleWatchlist}
-                                        className={inWatchlist ? "!border-purple !text-purple" : ""}
-                                    >
-                                        {inWatchlist ? "Koleksiyonda" : "Koleksiyona Ekle"}
-                                    </Button>
+                                    {watchlistLoading ? (
+                                        <div className="h-12 w-36 rounded-xl bg-bg-hover animate-pulse" />
+                                    ) : (
+                                        <Button
+                                            variant="secondary"
+                                            icon={inWatchlist ? BookmarkCheck : Bookmark}
+                                            onClick={() => toggleWatchlist({ title: movie.title, posterPath: posterUrl(movie.poster_path) })}
+                                            className={inWatchlist ? "!border-purple !text-purple" : ""}
+                                        >
+                                            {inWatchlist ? "Koleksiyonda" : "Koleksiyona Ekle"}
+                                        </Button>
+                                    )}
                                 </motion.div>
 
                                 <motion.div whileTap={{ scale: 0.9 }}>
-                                    <Button
-                                        variant={watched ? "primary" : "secondary"}
-                                        icon={Check}
-                                        onClick={handleWatched}
-                                        className={watched ? "!bg-success !border-success" : ""}
-                                    >
-                                        {watched ? "İzlendi" : "İzledim"}
-                                    </Button>
+                                    {watchedLoading ? (
+                                        <div className="h-12 w-36 rounded-xl bg-bg-hover animate-pulse" />
+                                    ) : (
+                                        <Button
+                                            variant={watched ? "primary" : "secondary"}
+                                            icon={Check}
+                                            onClick={() => toggleWatched({ title: movie.title, posterPath: posterUrl(movie.poster_path) })}
+                                            className={watched ? "!bg-success !border-success" : ""}
+                                        >
+                                            {watched ? "İzlendi" : "İzledim"}
+                                        </Button>
+                                    )}
                                 </motion.div>
                             </div>
                         </motion.div>

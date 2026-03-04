@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { History, Trash2, Calendar, PlayCircle, X } from "lucide-react";
-import { getAllProgress, removeProgress, clearAllProgress } from "@/lib/storage";
+import { getAllProgress, removeProgress, clearAllProgress } from "@/lib/db";
 import { posterUrl } from "@/lib/tmdb";
 import type { WatchProgress } from "@/types/player";
 import Button from "@/components/ui/Button";
@@ -15,21 +15,40 @@ import toast from "react-hot-toast";
 export default function HistoryPage() {
     const [history, setHistory] = useState<WatchProgress[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [page, setPage] = useState(0);
     const [showClearModal, setShowClearModal] = useState(false);
+    const limit = 20;
+
+    const fetchHistory = async (currentPage: number, isRefresh: boolean = false) => {
+        if (!isRefresh) setLoadingMore(true);
+        const newItems = await getAllProgress(limit, currentPage * limit);
+        if (newItems.length < limit) setHasMore(false);
+
+        setHistory(prev => isRefresh ? newItems : [...prev, ...newItems]);
+        setLoading(false);
+        setLoadingMore(false);
+    };
 
     useEffect(() => {
-        setHistory(getAllProgress());
-        setLoading(false);
+        fetchHistory(0, true);
     }, []);
 
-    const handleRemove = (tmdbId: string, type: "film" | "dizi") => {
-        removeProgress(tmdbId, type);
-        setHistory(getAllProgress());
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchHistory(nextPage);
+    };
+
+    const handleRemove = async (tmdbId: string, type: "film" | "dizi") => {
+        await removeProgress(tmdbId, type);
+        setHistory(prev => prev.filter(h => h.tmdbId !== tmdbId || h.type !== type));
         toast.success("Geçmişten silindi.");
     };
 
-    const handleClearAll = () => {
-        clearAllProgress();
+    const handleClearAll = async () => {
+        await clearAllProgress();
         setHistory([]);
         setShowClearModal(false);
         toast.success("Tüm izleme geçmişiniz temizlendi.");
@@ -207,6 +226,19 @@ export default function HistoryPage() {
                             </div>
                         );
                     })}
+
+                    {hasMore && (
+                        <div className="flex justify-center mt-10">
+                            <Button
+                                variant="secondary"
+                                onClick={handleLoadMore}
+                                disabled={loadingMore}
+                                className="w-full md:w-auto min-w-[200px] justify-center text-text-primary hover:bg-bg-hover hover:border-purple/30"
+                            >
+                                {loadingMore ? "Yükleniyor..." : "Daha Fazla Göster"}
+                            </Button>
+                        </div>
+                    )}
                 </div>
             )}
 

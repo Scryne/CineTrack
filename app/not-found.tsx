@@ -3,10 +3,10 @@ import Link from "next/link";
 export default function NotFound() {
     return (
         <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-            <div className="text-8xl font-bold text-accent/20 mb-4 select-none">404</div>
-            <div className="w-20 h-20 rounded-full bg-card border border-white/10 flex items-center justify-center mb-6">
+            <div className="text-8xl font-bold text-purple/20 mb-4 select-none">404</div>
+            <div className="w-20 h-20 rounded-full bg-bg-card border border-border flex items-center justify-center mb-6">
                 <svg
-                    className="w-10 h-10 text-muted"
+                    className="w-10 h-10 text-text-muted"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -19,13 +19,13 @@ export default function NotFound() {
                     />
                 </svg>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Sayfa Bulunamadı</h2>
-            <p className="text-muted mb-8 max-w-md">
+            <h2 className="text-2xl font-bold text-text-primary mb-2">Sayfa Bulunamadı</h2>
+            <p className="text-text-secondary mb-8 max-w-md">
                 Aradığın sayfa mevcut değil veya taşınmış olabilir.
             </p>
             <Link
                 href="/"
-                className="px-6 py-3 bg-accent hover:bg-accent-hover text-white rounded-xl font-medium transition-colors shadow-lg shadow-accent/25"
+                className="px-6 py-3 bg-purple hover:bg-purple-light text-white rounded-xl font-medium transition-colors shadow-lg shadow-purple/25"
             >
                 Ana Sayfaya Dön →
             </Link>

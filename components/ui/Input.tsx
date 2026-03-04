@@ -1,49 +1,65 @@
 "use client";
 
-import React, { forwardRef } from "react";
-import { X } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { forwardRef } from "react";
+import { LucideIcon, X } from "lucide-react";
 
-interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> {
+interface InputProps {
     icon?: LucideIcon;
+    type?: string;
+    placeholder?: string;
+    value: string;
+    onChange: (value: string) => void;
+    onFocus?: () => void;
+    onBlur?: () => void;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+    required?: boolean;
+    minLength?: number;
     clearable?: boolean;
-    value?: string;
-    onChange?: (value: string) => void;
+    className?: string;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-    { icon: Icon, clearable = false, value, onChange, className = "", ...props },
-    ref
+    {
+        icon: Icon,
+        type = "text",
+        placeholder,
+        value,
+        onChange,
+        onFocus,
+        onBlur,
+        onKeyDown,
+        required,
+        minLength,
+        clearable,
+        className = "",
+    },
+    ref,
 ) {
     return (
-        <div className="relative group">
+        <div className={`relative ${className}`}>
             {Icon && (
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8B99] group-focus-within:text-[#7B5CF0] transition-colors">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted">
                     <Icon size={18} />
                 </div>
             )}
-
             <input
                 ref={ref}
+                type={type}
+                placeholder={placeholder}
                 value={value}
-                onChange={(e) => onChange?.(e.target.value)}
-                className={`
-          w-full bg-[#16161A] border border-[#2A2A35] rounded-xl
-          px-4 py-2.5 text-sm text-[#F0F0F5] placeholder-[#4A4A5A]
-          outline-none transition-all duration-200
-          focus:border-[#7B5CF0] focus:shadow-[0_0_0_3px_rgba(123,92,240,0.15)]
-          ${Icon ? "pl-10" : ""}
-          ${clearable && value ? "pr-9" : ""}
-          ${className}
-        `}
-                {...props}
+                onChange={(e) => onChange(e.target.value)}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                onKeyDown={onKeyDown}
+                required={required}
+                minLength={minLength}
+                className={`w-full bg-[#1A1A24] border border-[#2A2A35] rounded-xl py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple-DEFAULT focus:ring-1 focus:ring-purple-DEFAULT/30 transition-colors ${Icon ? "pl-11 pr-4" : "px-4"} ${clearable && value ? "pr-10" : ""}`}
             />
-
             {clearable && value && (
                 <button
                     type="button"
-                    onClick={() => onChange?.("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B8B99] hover:text-[#F0F0F5] transition-colors"
+                    onClick={() => onChange("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
                 >
                     <X size={16} />
                 </button>

@@ -1,5 +1,7 @@
 'use client'
 
+import { logger } from '@/lib/logger'
+
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,7 +10,7 @@ import { ChevronLeft, ExternalLink, PlayCircle, Bookmark, Check, Star, Loader2 }
 import toast from 'react-hot-toast'
 
 import { getMovieDetail, posterUrl, profileUrl, BLUR_PLACEHOLDER } from '@/lib/tmdb'
-import SOURCES, { getMovieEmbedUrl } from '@/lib/sources'
+import SOURCES, { getMovieEmbedUrl, isSourceBlocked } from '@/lib/sources'
 import { searchSubtitles, getSubtitleDownloadUrl, loadSubtitleAsBlob } from '@/lib/subtitles'
 import {
     isInWatchlist,
@@ -19,7 +21,7 @@ import {
     removeFromWatched,
     getWatchProgress,
     saveWatchProgress
-} from '@/lib/storage'
+} from "@/lib/db"
 import type { TMDBMovieDetail, TMDBCastMember } from '@/lib/tmdb'
 import type { SubtitleResult } from '@/types/player'
 import dynamic from 'next/dynamic'
@@ -45,6 +47,7 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
             }, 10000) // 10 saniye timeout
             return () => clearTimeout(timer)
         }
+        return undefined
     }, [loading])
 
     // Player States
@@ -75,8 +78,11 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
             if (data) {
                 document.title = `${data.title} İzle — CineTrack`
 
-                setInWatchlist(isInWatchlist(params.id, "film"))
-                setWatched(isWatched(params.id, "film"))
+                const wl = await isInWatchlist(params.id, "film")
+                setInWatchlist(wl)
+
+                const w = await isWatched(params.id, "film")
+                setWatched(w)
 
                 // OpenSubtitles API ile altyazıları çek
                 setIsLoadingSubtitles(true)
@@ -87,19 +93,19 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                     })
                     setSubtitles(subs)
                 } catch (error) {
-                    console.error("Altyazı yüklenirken hata:", error)
+                    logger.error('Altyazı yüklenirken hata', error)
                 } finally {
                     setIsLoadingSubtitles(false)
                 }
 
-                const progress = getWatchProgress(params.id, "film")
+                const progress = await getWatchProgress(params.id, "film")
 
                 // Sadece yarıda bırakılmışsa (>2 dk) bildirimi göster
                 if (progress && progress.timeSpentSeconds && progress.timeSpentSeconds > 120) {
                     setShowProgressModal(true)
                 }
 
-                saveWatchProgress({
+                await saveWatchProgress({
                     tmdbId: params.id,
                     type: 'film',
                     title: data.title,
@@ -119,10 +125,10 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
     useEffect(() => {
         if (!movie) return;
 
-        const interval = setInterval(() => {
-            const currentProgress = getWatchProgress(params.id, "film");
+        const interval = setInterval(async () => {
+            const currentProgress = await getWatchProgress(params.id, "film");
             if (currentProgress) {
-                saveWatchProgress({
+                await saveWatchProgress({
                     ...currentProgress,
                     timeSpentSeconds: (currentProgress.timeSpentSeconds || 0) + 10,
                     updatedAt: new Date().toISOString()
@@ -185,10 +191,17 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
 
     const handleError = () => {
         setHasError(true)
-        if (sourceIndex < SOURCES.length - 1) {
-            toast.loading(`Otomatik olarak ${SOURCES[sourceIndex + 1].name}'a geçiliyor...`, { duration: 2000 })
+        // Sonraki engellenmenış kaynağı bul
+        let nextIndex = sourceIndex + 1
+        while (nextIndex < SOURCES.length && isSourceBlocked(SOURCES[nextIndex].id)) {
+            nextIndex++
+        }
+
+        if (nextIndex < SOURCES.length) {
+            toast.loading(`${SOURCES[sourceIndex].name} yüklenemedi, ${SOURCES[nextIndex].name} deneniyor...`, { duration: 2000 })
+            const target = nextIndex
             setTimeout(() => {
-                setSourceIndex(prev => prev + 1)
+                setSourceIndex(target)
                 setHasError(false)
             }, 2000)
         } else {
@@ -197,14 +210,14 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
         }
     }
 
-    const handleWatchlist = () => {
+    const handleWatchlist = async () => {
         if (!movie) return;
         if (inWatchlist) {
-            removeFromWatchlist(params.id, "film");
+            await removeFromWatchlist(params.id, "film");
             setInWatchlist(false);
             toast.success("Koleksiyondan çıkarıldı");
         } else {
-            addToWatchlist({
+            await addToWatchlist({
                 id: params.id,
                 type: "film",
                 title: movie.title,
@@ -216,14 +229,14 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
         }
     };
 
-    const handleWatched = () => {
+    const handleWatched = async () => {
         if (!movie) return;
         if (watched) {
-            removeFromWatched(params.id, "film");
+            await removeFromWatched(params.id, "film");
             setWatched(false);
             toast.success("İzlenenlerden çıkarıldı");
         } else {
-            markAsWatched({
+            await markAsWatched({
                 id: params.id,
                 type: "film",
                 title: movie.title,
@@ -313,6 +326,7 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                         allSourcesFailed={allSourcesFailed}
                         onAddToWatchlist={handleWatchlist}
                         inWatchlist={inWatchlist}
+                        activeSourceId={activeSource.id}
                     />
                 </div>
             </section>

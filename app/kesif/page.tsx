@@ -1,5 +1,7 @@
 "use client";
 
+import { logger } from '@/lib/logger';
+
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -159,7 +161,7 @@ export default function KesifPage() {
 
             setResults(prev => isLoadMore ? [...prev, ...newResults] : newResults);
         } catch (error) {
-            console.error("Discovery error:", error);
+            logger.error('Discovery error', error);
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -447,8 +449,9 @@ export default function KesifPage() {
                                                         src={posterUrl(item.poster_path)}
                                                         alt={title}
                                                         fill
-                                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                        className="object-cover group-hover:scale-105 transition-transform duration-500 text-transparent"
                                                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-text-muted"><Film size={32} /></div>
@@ -481,8 +484,9 @@ export default function KesifPage() {
                                                         src={posterUrl(item.poster_path)}
                                                         alt={title}
                                                         fill
-                                                        className="object-cover"
+                                                        className="object-cover text-transparent"
                                                         sizes="150px"
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-text-muted"><Film size={32} /></div>

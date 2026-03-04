@@ -1,4 +1,5 @@
 import type { SubtitleSearchParams, SubtitleResult } from '@/types/player'
+import { logger } from './logger'
 
 const API_BASE = 'https://api.opensubtitles.com/api/v1'
 const API_KEY = process.env.NEXT_PUBLIC_OPENSUBTITLES_KEY || ''
@@ -80,7 +81,7 @@ export async function searchSubtitles(params: SubtitleSearchParams): Promise<Sub
 
         return results
     } catch (error) {
-        console.error('searchSubtitles error:', error)
+        logger.error('searchSubtitles error', error)
         return []
     }
 }
@@ -115,7 +116,7 @@ export async function getSubtitleDownloadUrl(fileId: number): Promise<string | n
 
         return link
     } catch (error) {
-        console.error('getSubtitleDownloadUrl error:', error)
+        logger.error('getSubtitleDownloadUrl error', error)
         return null
     }
 }
@@ -147,7 +148,7 @@ export async function loadSubtitleAsBlob(url: string): Promise<string | null> {
         const blob = new Blob([vttContent], { type: 'text/vtt' })
         return URL.createObjectURL(blob)
     } catch (error) {
-        console.error('loadSubtitleAsBlob error:', error)
+        logger.error('loadSubtitleAsBlob error', error)
         return null
     }
 }
