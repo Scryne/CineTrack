@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { logger } from "@/lib/logger";
 
 export default function Error({
     error,
@@ -9,6 +10,8 @@ export default function Error({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
+    logger.error("Global error boundary", error);
+
     return (
         <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
             <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
@@ -26,20 +29,20 @@ export default function Error({
                     />
                 </svg>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Bir şeyler ters gitti</h2>
-            <p className="text-muted mb-6 max-w-md">
+            <h2 className="text-2xl font-bold text-text-primary mb-2">Bir şeyler ters gitti</h2>
+            <p className="text-text-secondary mb-6 max-w-md">
                 {error.message || "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin."}
             </p>
             <div className="flex gap-3">
                 <button
                     onClick={reset}
-                    className="px-6 py-3 bg-accent hover:bg-accent-hover text-white rounded-xl font-medium transition-colors shadow-lg shadow-accent/25"
+                    className="px-6 py-3 bg-purple hover:bg-purple-light text-white rounded-xl font-medium transition-colors shadow-lg shadow-purple/25"
                 >
                     Tekrar Dene
                 </button>
                 <Link
                     href="/"
-                    className="px-6 py-3 bg-card border border-white/10 hover:border-white/20 text-white rounded-xl font-medium transition-colors"
+                    className="px-6 py-3 bg-bg-card border border-border hover:border-purple/50 text-text-primary rounded-xl font-medium transition-colors"
                 >
                     Ana Sayfaya Dön
                 </Link>

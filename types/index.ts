@@ -102,7 +102,7 @@ export interface WatchlistItem {
     id: string;
     type: MediaType;
     title: string;
-    posterPath: string;
+    posterPath: string | null;
     addedAt: string; // ISO date string
 }
 
@@ -111,7 +111,7 @@ export interface WatchedItem {
     id: string;
     type: MediaType;
     title: string;
-    posterPath: string;
+    posterPath: string | null;
     watchedAt: string; // ISO date string
 }
 
@@ -128,7 +128,7 @@ export interface RatingItem {
     id: string;
     type: MediaType;
     title: string;
-    posterPath: string;
+    posterPath: string | null;
     rating: number; // 1-10
     ratedAt: string; // ISO date string
 }
@@ -142,92 +142,12 @@ export interface CustomList {
     createdAt: string; // ISO date string
     color: string; // hex renk
 }
-
-// --- Etiketler ---
-export interface TagItem {
-    id: string;
-    type: MediaType;
-    tags: string[];
-}
-
-
-
 // --- Kullanıcı Profili ---
 export interface UserProfile {
-    username: string;
-    avatar: string; // Emoji
+    id?: string;
+    username?: string;
+    avatar?: string;
+    avatarEmoji?: string;
+    cinemaIdentity?: string;
 }
 
-// ==========================================
-// API Response Tipleri
-// ==========================================
-
-// --- TMDB ---
-export interface TMDBSearchResponse {
-    page: number;
-    results: TMDBSearchResult[];
-    totalPages: number;
-    totalResults: number;
-}
-
-export interface TMDBSearchResult {
-    id: number;
-    mediaType: "movie" | "tv" | "person";
-    title?: string; // Film için
-    name?: string; // Dizi/Kişi için
-    posterPath: string | null;
-    profilePath?: string | null;
-    overview?: string;
-    releaseDate?: string;
-    firstAirDate?: string;
-    voteAverage?: number;
-}
-
-// --- TVMaze ---
-export interface TVMazeShow {
-    id: number;
-    name: string;
-    summary: string | null;
-    image: { medium: string | null; original: string | null } | null;
-    premiered: string | null;
-    ended: string | null;
-    rating: { average: number | null };
-    genres: string[];
-    status: string;
-}
-
-export interface TVMazeEpisode {
-    id: number;
-    name: string;
-    season: number;
-    number: number;
-    airdate: string;
-    runtime: number | null;
-    summary: string | null;
-    image: { medium: string | null; original: string | null } | null;
-}
-
-// --- OMDB ---
-export interface OMDBMovie {
-    Title: string;
-    Year: string;
-    Rated: string;
-    Released: string;
-    Runtime: string;
-    Genre: string;
-    Director: string;
-    Writer: string;
-    Actors: string;
-    Plot: string;
-    Language: string;
-    Country: string;
-    Awards: string;
-    Poster: string;
-    Ratings: { Source: string; Value: string }[];
-    Metascore: string;
-    imdbRating: string;
-    imdbVotes: string;
-    imdbID: string;
-    Type: string;
-    BoxOffice?: string;
-}

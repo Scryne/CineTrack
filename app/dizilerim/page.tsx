@@ -1,14 +1,16 @@
 "use client";
 
+import { logger } from '@/lib/logger';
+
 import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Trophy, Clock, Tv2, Calendar, Star, ChevronDown, CheckCircle2 } from "lucide-react";
-import { getAllWatchedEpisodes, getWatched, getWatchlist, getAllRatings } from "@/lib/storage";
+import { getAllWatchedEpisodes, getWatched, getWatchlist, getAllRatings } from "@/lib/db";
 import { getSeriesDetail, posterUrl } from "@/lib/tmdb";
 import type { TMDBSeasonSummary, TMDBSeriesDetail } from "@/lib/tmdb";
-import type { WatchedEpisode, RatingItem } from "@/types";
+import type { WatchedEpisode, RatingItem, WatchedItem, WatchlistItem } from "@/types";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -46,10 +48,15 @@ export default function DizilerimPage() {
         async function fetchAllSeriesData() {
             setLoading(true);
             try {
-                const watchedEpisodes = getAllWatchedEpisodes();
-                const watchedItems = getWatched().filter(i => i.type === "dizi");
-                const watchlistItems = getWatchlist().filter(i => i.type === "dizi");
-                setRatings(getAllRatings().filter(i => i.type === "dizi"));
+                const [watchedEpisodes, watchedData, watchlistData, ratingsData] = await Promise.all([
+                    getAllWatchedEpisodes(),
+                    getWatched(),
+                    getWatchlist(),
+                    getAllRatings()
+                ]);
+                const watchedItems = (watchedData as WatchedItem[]).filter((i: WatchedItem) => i.type === "dizi");
+                const watchlistItems = (watchlistData as WatchlistItem[]).filter((i: WatchlistItem) => i.type === "dizi");
+                setRatings((ratingsData as RatingItem[]).filter((i: RatingItem) => i.type === "dizi"));
 
                 // Get unique series IDs prioritizing those that have activity or are in lists
                 const uniqueSeriesIds = new Set<string>();
@@ -122,7 +129,7 @@ export default function DizilerimPage() {
 
                 setSeriesData(data);
             } catch (error) {
-                console.error("Dizi verileri yüklenirken hata oluştu:", error);
+                logger.error('Dizi verileri yüklenirken hata', error);
             } finally {
                 setLoading(false);
             }

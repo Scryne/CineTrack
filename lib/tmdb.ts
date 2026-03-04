@@ -2,8 +2,8 @@
 // CineTrack - TMDB API Helper
 // ==========================================
 
-const BASE_URL = "https://api.themoviedb.org/3";
-const API_KEY = process.env.NEXT_PUBLIC_TMDB_KEY || "";
+import { logger } from './logger'
+
 const LANGUAGE = "tr-TR";
 const FALLBACK_LANGUAGE = "en-US";
 
@@ -41,29 +41,36 @@ export function profileUrl(path: string | null): string {
 }
 
 // ==========================================
-// Yardımcı: Fetch Wrapper
+// Yardımcı: Fetch Wrapper (Proxy üzerinden)
 // ==========================================
+
+function getProxyBaseUrl(): string {
+    if (typeof window !== 'undefined') {
+        return '';  // Client-side: relative URL
+    }
+    // Server-side: need absolute URL
+    return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+}
 
 async function tmdbFetch<T>(endpoint: string, params: Record<string, string> = {}): Promise<T | null> {
     try {
         const searchParams = new URLSearchParams({
-            api_key: API_KEY,
+            endpoint,
             language: LANGUAGE,
             ...params,
         });
 
-        const res = await fetch(`${BASE_URL}${endpoint}?${searchParams.toString()}`, {
-            next: { revalidate: 3600 }
-        });
+        const baseUrl = getProxyBaseUrl();
+        const res = await fetch(`${baseUrl}/api/tmdb?${searchParams.toString()}`);
 
         if (!res.ok) {
-            console.error(`TMDB API hatası: ${res.status} ${res.statusText}`);
+            logger.error(`TMDB API hatası: ${res.status} ${res.statusText}`);
             return null;
         }
 
         return await res.json();
     } catch (error) {
-        console.error("TMDB API isteği başarısız:", error);
+        logger.error('TMDB API isteği başarısız', error);
         return null;
     }
 }
@@ -85,9 +92,11 @@ async function tmdbFetchWithFallback<T>(
     // Türkçe overview/biography boşsa İngilizce dene
     const overview = record.overview as string | undefined;
     const biography = record.biography as string | undefined;
+    const credits = record.credits as { cast?: unknown[] } | undefined;
     const needsFallback =
         (overview !== undefined && !overview?.trim()) ||
-        (biography !== undefined && !biography?.trim());
+        (biography !== undefined && !biography?.trim()) ||
+        (credits !== undefined && !credits?.cast?.length);
 
     if (needsFallback) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,6 +111,14 @@ async function tmdbFetchWithFallback<T>(
             }
             if (!biography?.trim() && (fallbackData.biography as string)?.trim()) {
                 record.biography = fallbackData.biography;
+            }
+            // Kadro (cast) yoksa İngilizce kadroyu kullan (bazen TR dilinde credits tamamen eksik gelebiliyor)
+            if (!record.credits?.cast?.length && fallbackData.credits?.cast?.length) {
+                record.credits = fallbackData.credits;
+            }
+            // Videolar (fragmanlar) yoksa İngilizce videoları kullan
+            if (!record.videos?.results?.length && fallbackData.videos?.results?.length) {
+                record.videos = fallbackData.videos;
             }
         }
     }
@@ -381,6 +398,14 @@ export async function getPersonDetail(id: string): Promise<TMDBPersonDetail | nu
     return tmdbFetchWithFallback<TMDBPersonDetail>(`/person/${id}`, {
         append_to_response: "combined_credits",
     });
+}
+
+/** Popüler filmler (tür filtresi olmadan) */
+export async function getPopularMovies(): Promise<TMDBMovieResult[] | null> {
+    const data = await tmdbFetch<TMDBDiscoverResponse>("/discover/movie", {
+        sort_by: "popularity.desc",
+    });
+    return (data?.results as TMDBMovieResult[]) ?? null;
 }
 
 /** Türe göre filmler */

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { MonitorPlay, Subtitles, Check, Loader2, AlertTriangle, ChevronDown } from 'lucide-react'
 import { Source } from '@/types/player'
 import type { SubtitleResult } from '@/types/player'
-import { checkSourceAvailability } from '@/lib/sources'
+import { checkSourceAvailability, isSourceBlocked } from '@/lib/sources'
 
 export interface PlayerControlsProps {
     sources: Source[]
@@ -101,17 +101,22 @@ export default function PlayerControls({
                     <div className="flex flex-wrap gap-2">
                         {sources.map((source, index) => {
                             const isAvailable = availableSources[source.id] !== false
+                            const isBlocked = isSourceBlocked(source.id)
+                            const isDisabled = !isAvailable || isBlocked
                             return (
                                 <button
                                     key={source.id}
                                     onClick={() => onSourceChange(index)}
-                                    disabled={!isAvailable}
-                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeSourceIndex === index
+                                    disabled={isDisabled}
+                                    className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeSourceIndex === index
                                         ? 'bg-purple text-white'
                                         : 'bg-bg border border-border text-text-primary hover:bg-bg-hover disabled:opacity-50 disabled:cursor-not-allowed'
                                         }`}
                                 >
                                     {source.name}
+                                    {isBlocked && (
+                                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-bg-card" title="Bu kaynak geçici olarak engellendi" />
+                                    )}
                                 </button>
                             )
                         })}

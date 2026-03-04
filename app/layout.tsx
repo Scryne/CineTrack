@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import ClientSetup from "@/components/ClientSetup";
-import ScrollToTop from "@/components/ScrollToTop";
+
+import AuthGuard from "@/components/auth/AuthGuard";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -23,12 +25,21 @@ export const metadata: Metadata = {
     "Filmlerinizi ve dizilerinizi takip edin, izleme listenizi yönetin, bölüm ilerlemelerinizi kaydedin.",
   keywords: ["film", "dizi", "takip", "izleme listesi", "watchlist"],
   manifest: "/manifest.json",
-  themeColor: "#7B5CF0",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "CineTrack",
   },
+  openGraph: {
+    title: "CineTrack - Film ve Dizi Takip",
+    description: "Filmlerini ve dizilerini takip et, keşfet, puanla.",
+    siteName: "CineTrack",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#7B5CF0",
 };
 
 export default function RootLayout({
@@ -39,12 +50,16 @@ export default function RootLayout({
   return (
     <html lang="tr" className={`${outfit.variable} ${inter.variable}`}>
       <body className="font-body bg-bg-primary text-text-primary antialiased min-h-screen">
-        <Navbar />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {children}
-        </main>
-        <ClientSetup />
-        <ScrollToTop />
+        <AuthGuard>
+          <Navbar />
+          <ErrorBoundary>
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              {children}
+            </main>
+          </ErrorBoundary>
+          <ClientSetup />
+
+        </AuthGuard>
       </body>
     </html>
   );

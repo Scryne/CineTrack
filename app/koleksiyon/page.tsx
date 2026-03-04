@@ -21,7 +21,7 @@ import {
     getRating,
     getTags,
     getWatchedEpisodes,
-} from "@/lib/storage";
+} from "@/lib/db";
 import { getSeriesDetail, posterUrl } from "@/lib/tmdb";
 import type { WatchlistItem, WatchedItem } from "@/types";
 import Card from "@/components/ui/Card";
@@ -53,8 +53,14 @@ function SeriesMiniProgress({ seriesId }: { seriesId: string }) {
                 setTotalEps(data.number_of_episodes || 0);
             }
         }
+        async function fetchWatched() {
+            const episodes = await getWatchedEpisodes(seriesId);
+            if (mounted) {
+                setWatchedEps(episodes.length);
+            }
+        }
         fetchTotal();
-        setWatchedEps(getWatchedEpisodes(seriesId).length);
+        fetchWatched();
         return () => { mounted = false; };
     }, [seriesId]);
 
@@ -85,23 +91,23 @@ export default function KoleksiyonPage() {
     const [tagsMap, setTagsMap] = useState<Record<string, string[]>>({});
     const [ratingsMap, setRatingsMap] = useState<Record<string, number>>({});
 
-    const reloadData = () => {
-        const wl = getWatchlist();
-        const wd = getWatched();
+    const reloadData = async () => {
+        const wl = await getWatchlist();
+        const wd = await getWatched();
         setWatchlist(wl);
         setWatched(wd);
 
         const tMap: Record<string, string[]> = {};
         const rMap: Record<string, number> = {};
 
-        [...wl, ...wd].forEach(item => {
+        for (const item of [...wl, ...wd]) {
             const key = `${item.type}-${item.id}`;
-            if (!tMap[key]) tMap[key] = getTags(item.id, item.type);
+            if (!tMap[key]) tMap[key] = await getTags(item.id, item.type);
             if (rMap[key] === undefined) {
-                const r = getRating(item.id, item.type);
+                const r = await getRating(item.id, item.type);
                 if (r !== null) rMap[key] = r;
             }
-        });
+        }
 
         setTagsMap(tMap);
         setRatingsMap(rMap);
@@ -109,21 +115,25 @@ export default function KoleksiyonPage() {
 
     useEffect(() => {
         reloadData();
+        window.addEventListener("cinetrack_supabase_update", reloadData);
         window.addEventListener("storage", reloadData);
-        return () => window.removeEventListener("storage", reloadData);
+        return () => {
+            window.removeEventListener("cinetrack_supabase_update", reloadData);
+            window.removeEventListener("storage", reloadData);
+        };
     }, []);
 
-    const handleRemoveWatchlist = (e: React.MouseEvent, id: string, type: "film" | "dizi") => {
+    const handleRemoveWatchlist = async (e: React.MouseEvent, id: string, type: "film" | "dizi") => {
         e.preventDefault();
         e.stopPropagation();
-        removeFromWatchlist(id, type);
+        await removeFromWatchlist(id, type);
         reloadData();
     };
 
-    const handleRemoveWatched = (e: React.MouseEvent, id: string, type: "film" | "dizi") => {
+    const handleRemoveWatched = async (e: React.MouseEvent, id: string, type: "film" | "dizi") => {
         e.preventDefault();
         e.stopPropagation();
-        removeFromWatched(id, type);
+        await removeFromWatched(id, type);
         reloadData();
     };
 

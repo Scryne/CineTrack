@@ -1,7 +1,11 @@
 'use client'
 
+import { logger } from '@/lib/logger'
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Loader2, AlertCircle, Plus, Minus, WifiOff, Bookmark } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { markSourceBlocked } from '@/lib/sources'
 
 interface SubtitleCue {
     startTime: number
@@ -18,11 +22,10 @@ interface VideoPlayerProps {
     allSourcesFailed?: boolean
     onAddToWatchlist?: () => void
     inWatchlist?: boolean
+    activeSourceId?: string // Mevcut kaynağın ID'si (X-Frame engelleme için)
 }
 
-// Removed synchronous VTT parsing functions to use Web Worker from public/subtitlesWorker.js
-
-export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitleUrl, allSourcesFailed, onAddToWatchlist, inWatchlist }: VideoPlayerProps) {
+export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitleUrl, allSourcesFailed, onAddToWatchlist, inWatchlist, activeSourceId }: VideoPlayerProps) {
     const [isLoading, setIsLoading] = useState(true)
     const [hasError, setHasError] = useState(false)
     const [isOffline, setIsOffline] = useState(false)
@@ -58,10 +61,14 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current)
         }
+        // X-Frame-Options engeli: kaynağı 1 saat blokla
+        if (activeSourceId) {
+            markSourceBlocked(activeSourceId)
+        }
         onError()
-    }, [onError])
+    }, [onError, activeSourceId])
 
-    // Load timeout
+    // Load timeout — 8 saniye içinde yüklenmezse X-Frame-Options engeli sayılır
     useEffect(() => {
         setIsLoading(true)
         setHasError(false)
@@ -94,11 +101,11 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
             if (e.key.toLowerCase() === 'f') {
                 if (!document.fullscreenElement && containerRef.current) {
                     containerRef.current.requestFullscreen().catch((err) => {
-                        console.error('Error attempting to enable fullscreen:', err)
+                        logger.error('Error attempting to enable fullscreen', err)
                     })
                 } else if (document.fullscreenElement) {
                     document.exitFullscreen().catch((err) => {
-                        console.error('Error attempting to disable fullscreen:', err)
+                        logger.error('Error attempting to disable fullscreen', err)
                     })
                 }
             }
@@ -120,6 +127,45 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
             window.removeEventListener('offline', handleOffline)
         }
     }, [])
+
+    // Popup / reklam engelleme — window.open override ile gerçek popup'ları engelle
+    useEffect(() => {
+        // Override window.open to block popups from iframe scripts
+        const originalOpen = window.open
+        let popupCooldown = false
+
+        window.open = function () {
+            // Cooldown: kısa sürede birden fazla toast gösterme
+            if (!popupCooldown) {
+                popupCooldown = true
+                setTimeout(() => { popupCooldown = false }, 5000)
+                toast('Reklam penceresi engellendi', {
+                    duration: 2000,
+                    icon: '🛡️',
+                    style: { background: '#1a1a1a', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' },
+                })
+            }
+            return null
+        }
+
+        // Detect and close any popup windows that sneak through
+        const handleWindowOpen = (e: Event) => {
+            if (e.target && (e.target as HTMLElement).tagName === 'A') {
+                const anchor = e.target as HTMLAnchorElement
+                if (anchor.target === '_blank' && anchor.closest('iframe')) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                }
+            }
+        }
+
+        document.addEventListener('click', handleWindowOpen, true)
+
+        return () => {
+            window.open = originalOpen
+            document.removeEventListener('click', handleWindowOpen, true)
+        }
+    }, [embedUrl])
 
     // Load and parse VTT subtitle file
     useEffect(() => {
@@ -280,20 +326,34 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
             )}
 
             {!allSourcesFailed && (
-                <iframe
-                    ref={iframeRef}
-                    src={embedUrl}
-                    title={title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                    allowFullScreen={true}
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    scrolling="no"
-                    frameBorder="0"
-                    className="w-full h-full border-none"
-                    onLoad={handleLoad}
-                    onError={handleError}
-                />
+                <>
+                    {/* Üst reklam alanı engeli — iframe'in üst %15'ini kaplar */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0, left: 0,
+                            width: '100%', height: '15%',
+                            zIndex: 10,
+                            pointerEvents: 'all',
+                            background: 'transparent',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <iframe
+                        ref={iframeRef}
+                        src={embedUrl}
+                        title={title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                        allowFullScreen={true}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        scrolling="no"
+                        frameBorder="0"
+                        className="w-full h-full border-none"
+                        onLoad={handleLoad}
+                        onError={handleError}
+                    />
+                </>
             )}
 
             {/* Subtitle Overlay */}

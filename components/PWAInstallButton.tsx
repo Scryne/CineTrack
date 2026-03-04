@@ -26,7 +26,6 @@ export default function PWAInstallButton() {
         window.addEventListener("appinstalled", () => {
             setIsInstallable(false);
             setDeferredPrompt(null);
-            console.log("CineTrack başarıyla yüklendi.");
         });
 
         return () => {
@@ -41,8 +40,7 @@ export default function PWAInstallButton() {
         // Yükleme istemini tetikle
         deferredPrompt.prompt();
         // Kullanıcının yanıtını bekle
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`Kullanıcı yanıtı: ${outcome}`);
+        await deferredPrompt.userChoice;
         // İstem bir kez kullanıldıktan sonra tekrar kullanılamaz, prompt'u sıfırla
         setDeferredPrompt(null);
         setIsInstallable(false);

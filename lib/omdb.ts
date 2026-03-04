@@ -2,8 +2,10 @@
 // CineTrack - OMDB API Helper
 // ==========================================
 
+import { logger } from './logger'
+
 const BASE_URL = "https://www.omdbapi.com";
-const API_KEY = process.env.NEXT_PUBLIC_OMDB_KEY || "";
+const OMDB_KEY = process.env.NEXT_PUBLIC_OMDB_KEY;
 
 // ==========================================
 // Response Tipi
@@ -31,25 +33,25 @@ interface OMDBResponse {
 
 /** IMDb, Rotten Tomatoes ve Metacritic puanlarını getir */
 export async function getRatings(imdbId: string): Promise<OMDBRatings | null> {
-    if (!imdbId) return null;
+    if (!imdbId || !OMDB_KEY) return null;
 
     try {
         const params = new URLSearchParams({
-            apikey: API_KEY,
+            apikey: OMDB_KEY,
             i: imdbId,
         });
 
         const res = await fetch(`${BASE_URL}?${params.toString()}`);
 
         if (!res.ok) {
-            console.error(`OMDB API hatası: ${res.status} ${res.statusText}`);
+            logger.error(`OMDB API hatası: ${res.status} ${res.statusText}`);
             return null;
         }
 
         const data: OMDBResponse = await res.json();
 
         if (data.Response === "False") {
-            console.error("OMDB API yanıt hatası:", data.Error);
+            logger.error('OMDB API yanıt hatası', data.Error);
             return null;
         }
 
@@ -68,7 +70,7 @@ export async function getRatings(imdbId: string): Promise<OMDBRatings | null> {
             metacritic: mcRating?.Value ?? null,
         };
     } catch (error) {
-        console.error("OMDB API isteği başarısız:", error);
+        logger.error('OMDB API isteği başarısız', error);
         return null;
     }
 }
