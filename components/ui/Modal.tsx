@@ -39,8 +39,8 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        transition={{ duration: 0.25 }}
+                        className="absolute inset-0 bg-black/70 backdrop-blur-md"
                         onClick={onClose}
                     />
 
@@ -50,8 +50,11 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="relative w-full max-w-lg bg-[#16161A] border border-[#2A2A35] rounded-2xl shadow-xl overflow-hidden"
+                        className="relative w-full max-w-lg bg-[#16161A] border border-[#2A2A35] rounded-2xl shadow-xl shadow-black/40 overflow-hidden"
                     >
+                        {/* Subtle top highlight */}
+                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
                         {/* Header */}
                         {title && (
                             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2A2A35]">

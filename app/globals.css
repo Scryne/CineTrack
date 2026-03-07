@@ -1,189 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background-color: #0D0D0F;
-  color: #F0F0F5;
-  font-family: "Inter", sans-serif;
-  min-height: 100vh;
-}
-
-/* Selection */
-::selection {
-  background: #7B5CF0;
-  color: white;
-}
-
-/* Scrollbar stilleri */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #0D0D0F;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #2A2A35;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #7B5CF0;
-}
-
-/* Firefox scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #2A2A35 #0D0D0F;
-}
-
-/* Genel geçiş animasyonları */
-a,
-button {
-  transition: all 0.2s ease-in-out;
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@layer base {
+  :root {
+    --font-bebas: 'Bebas Neue';
+    --font-inter: 'Inter';
+    --font-mono: 'JetBrains Mono';
   }
 
-  .scrollbar-hide {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #080808;
+    color: #F2F2F7;
+    font-family: var(--font-inter), sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0E0E10;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2C2C32;
+    border-radius: 99px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #7B5CF0;
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(123, 92, 240, .35);
+    color: #fff;
+  }
+
+  /* Hide scrollbar utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
+@layer components {
+
+  /* Shimmer skeleton */
+  .skeleton {
+    @apply bg-overlay rounded-md;
+    background-image: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, .04) 50%,
+        transparent 100%);
+    background-size: 600px 100%;
+    animation: shimmer 1.6s infinite linear;
   }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.15s ease-out;
-}
-
-@keyframes discoveryCardEnter {
-  0% {
-    opacity: 0;
-    transform: scale(0.6) rotate(-8deg) translateY(40px);
+  /* Section accent line */
+  .section-line {
+    @apply w-[3px] h-6 bg-purple-500 rounded-full flex-shrink-0;
   }
 
-  60% {
-    opacity: 1;
-    transform: scale(1.03) rotate(1deg) translateY(-5px);
+  /* Horizontal scroll container */
+  .h-scroll {
+    @apply flex gap-3 overflow-x-auto pb-2 no-scrollbar;
   }
 
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg) translateY(0);
+  /* Poster card base */
+  .poster-card {
+    @apply relative flex-shrink-0 overflow-hidden rounded-lg cursor-pointer;
+    aspect-ratio: 2/3;
   }
-}
-
-.discovery-card-enter {
-  animation: discoveryCardEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-/* Takvim animasyonları */
-@keyframes calendarPulse {
-
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.6;
-    transform: scale(1.3);
-  }
-}
-
-.calendar-pulse {
-  animation: calendarPulse 2s ease-in-out infinite;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slide-up {
-  animation: slideUp 0.25s ease-out forwards;
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0);
-  }
-
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-}
-
-.modal-backdrop {
-  animation: modalFadeIn 0.2s ease-out forwards;
-}
-
-/* Skeleton shimmer */
-@keyframes shimmer {
-  0% {
-    background-position: -400px 0;
-  }
-  100% {
-    background-position: 400px 0;
-  }
-}
-
-.skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    #16161A 0%,
-    #1E1E24 40%,
-    #2A2A35 50%,
-    #1E1E24 60%,
-    #16161A 100%
-  );
-  background-size: 800px 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
-/* Global Polish */
-.hover-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.hover-card:hover {
-  transform: scale(1.03) translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
-  z-index: 10;
 }

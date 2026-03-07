@@ -58,7 +58,7 @@ export default function ShareCardModal({
 
             // Create download link
             const link = document.createElement("a");
-            link.download = `cinetrack-${username}-2024.png`;
+            link.download = `cinetrack-${username}-${new Date().getFullYear()}.png`;
             link.href = image;
             link.click();
         } catch (error) {
@@ -70,8 +70,8 @@ export default function ShareCardModal({
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+            <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"

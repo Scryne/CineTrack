@@ -1,58 +1,72 @@
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss'
 
 const config: Config = {
-  content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        bg: {
-          primary: "#0D0D0F",
-          card: "#16161A",
-          hover: "#1E1E24",
-        },
-        border: {
-          DEFAULT: "#2A2A35",
-        },
-        purple: {
-          DEFAULT: "#7B5CF0",
-          light: "#9D7FF4",
-          dark: "#5A3FD4",
-          glow: "rgba(123,92,240,0.15)",
-        },
-        text: {
-          primary: "#F0F0F5",
-          secondary: "#8B8B99",
-          muted: "#4A4A5A",
-        },
-        success: "#22C55E",
-        rating: "#F59E0B",
-        // Legacy aliases for backward compatibility
-        background: "#0D0D0F",
-        card: "#16161A",
-        accent: "#7B5CF0",
-        "accent-hover": "#9D7FF4",
-        foreground: "#F0F0F5",
-        muted: "#8B8B99",
+        void: '#080808',
+        base: '#0E0E10',
+        raised: '#141416',
+        overlay: '#1C1C1F',
+        subtle: '#242428',
+        'border-dim': '#1F1F23',
+        'border-mid': '#2C2C32',
+        'border-bright': '#3D3D45',
+        'purple-950': '#130B2E',
+        'purple-800': '#3D1FA8',
+        'purple-600': '#5B3FBF',
+        'purple-500': '#7B5CF0',
+        'purple-400': '#9D7FF4',
+        'purple-300': '#BBA8F8',
+        'text-pri': '#F2F2F7',
+        'text-sec': '#9494A0',
+        'text-muted': '#55555F',
+        'text-dim': '#35353D',
+        'ok': '#34D399',
+        'warn': '#FBBF24',
+        'err': '#F87171',
       },
       fontFamily: {
-        display: ["Outfit", "sans-serif"],
-        body: ["Inter", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
-        // Legacy alias
-        sans: ["Inter", "sans-serif"],
+        display: ['var(--font-bebas)', 'sans-serif'],
+        body: ['var(--font-inter)', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+      },
+      borderRadius: {
+        sm: '6px', md: '10px', lg: '16px', xl: '20px',
       },
       boxShadow: {
-        card: "0 0 0 1px #2A2A35",
-        "card-hover":
-          "0 0 0 1px #7B5CF0, 0 0 24px rgba(123,92,240,0.15)",
-        "purple-glow": "0 0 32px rgba(123,92,240,0.25)",
+        card: '0 1px 3px rgba(0,0,0,.5), 0 0 0 1px #1F1F23',
+        'card-up': '0 8px 32px rgba(0,0,0,.6), 0 0 0 1px #7B5CF0',
+        glow: '0 0 40px rgba(123,92,240,.25)',
+        'glow-sm': '0 0 16px rgba(123,92,240,.15)',
+      },
+      backgroundImage: {
+        'fade-b': 'linear-gradient(to bottom, transparent, #080808)',
+        'fade-l': 'linear-gradient(to left,   transparent, #080808)',
+        'fade-bl': 'linear-gradient(to bottom left, transparent 40%, #080808)',
+        'purple-shine': 'linear-gradient(135deg, #1A0F3D 0%, #0E0E10 100%)',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-600px 0' },
+          '100%': { backgroundPosition: '600px 0' },
+        },
+        'count-up': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 1.6s infinite linear',
+        'count-up': 'count-up 0.4s ease-out forwards',
+      },
+      transitionTimingFunction: {
+        smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
     },
   },
   plugins: [],
-};
-export default config;
+}
+
+export default config

@@ -10,10 +10,10 @@ import {
     getOnTheAir,
     getUpcomingMovies,
     getSeriesNextEpisode,
+    getSeriesDetail,
     posterUrl,
     TMDBSeriesResult,
     TMDBMovieResult,
-    TMDBSeriesDetail,
 } from "@/lib/tmdb";
 import { getWatchlist } from "@/lib/db";
 import {
@@ -202,19 +202,14 @@ export default function TakvimPage() {
             const seriesUpcoming: typeof upcomingSeries = [];
             for (const item of seriesInWatchlist.slice(0, 10)) {
                 try {
-                    const res = await fetch(
-                        `https://api.themoviedb.org/3/tv/${item.id}?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY}&language=tr-TR`
-                    );
-                    if (res.ok) {
-                        const detail: TMDBSeriesDetail = await res.json();
-                        if (detail.status === "Returning Series" && detail.next_episode_to_air?.air_date) {
-                            seriesUpcoming.push({
-                                name: detail.name,
-                                id: detail.id,
-                                posterPath: detail.poster_path,
-                                nextSeason: detail.next_episode_to_air.air_date,
-                            });
-                        }
+                    const detail = await getSeriesDetail(String(item.id));
+                    if (detail && detail.status === "Returning Series" && detail.next_episode_to_air?.air_date) {
+                        seriesUpcoming.push({
+                            name: detail.name,
+                            id: detail.id,
+                            posterPath: detail.poster_path,
+                            nextSeason: detail.next_episode_to_air.air_date,
+                        });
                     }
                 } catch { /* skip */ }
             }

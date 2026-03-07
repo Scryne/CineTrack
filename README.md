@@ -38,10 +38,11 @@ Kullanıcı verileri **Supabase** üzerinde güvenli bir şekilde saklanır. E-p
 ## ✨ Özellikler
 
 ### 🔍 Keşif & Arama
-- **Gelişmiş Arama** — Film ve dizileri anında arayın (debounced multi-search)
+- **Gelişmiş Arama** — Yenilenmiş tasarımı ve geliştirilmiş performansıyla film ve dizileri anında arayın (debounced multi-search)
 - **Trend İçerikler** — Haftalık trend filmler ve diziler
 - **Türe Göre Keşif** — 8 farklı kategoride (Aksiyon, Komedi, Dram, Gerilim, Bilim Kurgu, Korku, Animasyon, Belgesel) içerik keşfedin
 - **Kişiselleştirilmiş Öneriler** — Puanlarınıza ve izleme geçmişinize dayalı akıllı öneriler
+- **Yapay Zeka Destekli Özet Bandı** — Gündemdeki ve popüler yapımlara ait hareketli, yapay zeka tarafından oluşturulmuş kısa özetler
 
 ### 📋 Koleksiyon Yönetimi
 - **Koleksiyon (Watchlist)** — İzlemek istediğiniz yapımları kaydedin
@@ -56,7 +57,7 @@ Kullanıcı verileri **Supabase** üzerinde güvenli bir şekilde saklanır. E-p
 - **Nerede İzlenir?** — TMDB Watch Providers ile hangi platformlarda mevcut olduğunu görün
 
 ### ▶️ İzleme Deneyimi
-- **Yerleşik Video Oynatıcı** — Çoklu kaynak desteği, otomatik failover
+- **Yerleşik Video Oynatıcı** — Kapsamlı testlerden geçirilmiş çoklu kaynak desteği, pürüzsüz otomatik failover
 - **Altyazı Desteği** — OpenSubtitles API entegrasyonu, zamanlama ayarlama
 - **Kaldığın Yerden Devam Et** — İzleme ilerlemesi otomatik kaydedilir
 - **İzleme Geçmişi** — Tüm izleme geçmişinizi görüntüleyin ve yönetin
@@ -66,6 +67,7 @@ Kullanıcı verileri **Supabase** üzerinde güvenli bir şekilde saklanır. E-p
 ### 👤 Profil & Hesap
 - **Supabase Authentication** — E-posta/şifre veya Google OAuth ile giriş
 - **Kullanıcı Profili** — Avatar emoji, kullanıcı adı, sinema kişiliği
+- **Kapsamlı Senkronizasyon** — Puanların ve izleme geçmişinin profille güvenilir ve hızlı eşzamanlanması
 - **Bildirim Ayarları** — Günlük izleme hatırlatıcıları
 - **Yıl Sonu Özeti (Wrapped)** — İzleme alışkanlıklarınızın yıllık özeti
 - **Profil Paylaşımı** — İzleme istatistiklerinizi kart olarak paylaşın
@@ -75,8 +77,9 @@ Kullanıcı verileri **Supabase** üzerinde güvenli bir şekilde saklanır. E-p
 - **Dizi Takip** — Dizilerim sayfasında tüm takip edilen dizileri yönetin
 
 ### 🎨 Tasarım & UX
+- **Premium Deneyim (Netflix Seviyesi)** — Profesyonel, modern ve baştan aşağı yenilenmiş görsel kimlik
 - **Sinematik Karanlık Tema** — Özel renk paleti (#7B5CF0 mor aksan)
-- **Akıcı Animasyonlar** — Framer Motion ile sayfa geçişleri ve mikro-animasyonlar
+- **Akıcı Animasyonlar** — Framer Motion ile tasarlanmış gelişmiş sayfa geçişleri ve mikro-animasyonlar
 - **Tam Responsive** — Mobil, tablet ve masaüstüne optimize
 - **PWA Desteği** — Uygulamayı ana ekranınıza yükleyin
 - **Offline Destek** — Service Worker ile çevrimdışı çalışma

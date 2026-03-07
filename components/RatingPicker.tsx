@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { addRating, getRating, removeRating } from "@/lib/db";
 import toast from "react-hot-toast";
+import { XCircle } from "lucide-react";
 
 interface RatingPickerProps {
     id: string;
@@ -117,22 +118,18 @@ export default function RatingPicker({ id, type, title, posterPath, onRatingChan
                         {displayRating}/10
                     </span>
                 )}
-            </div>
 
-            {/* Güncelle / Kaldır Butonları */}
-            {showActions && currentRating !== null && (
-                <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted">
-                        Puanın: <span className="text-[#f5c518] font-semibold">{currentRating}/10</span>
-                    </span>
+                {/* Remove Rating Button integrated inline */}
+                {showActions && currentRating !== null && (
                     <button
                         onClick={handleRemove}
-                        className="text-xs px-3 py-1.5 rounded-md bg-white/5 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-white/10 transition-all duration-200"
+                        title="Puanı Kaldır"
+                        className="ml-2 flex flex-col items-center justify-center p-1 rounded-full text-text-muted hover:text-err hover:bg-err/10 transition-all duration-200"
                     >
-                        Kaldır
+                        <XCircle size={18} strokeWidth={2.5} />
                     </button>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

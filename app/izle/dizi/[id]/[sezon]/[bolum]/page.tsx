@@ -6,10 +6,10 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, ExternalLink, PlayCircle, Bookmark, Check, Star, Loader2, CheckCircle2, SkipForward } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, PlayCircle, Bookmark, Check, Star, Loader2, CheckCircle2, SkipForward, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-import { getSeriesDetail, getSeasonDetail, posterUrl, profileUrl, BLUR_PLACEHOLDER } from '@/lib/tmdb'
+import { getSeriesDetail, getSeasonDetail, posterUrl, backdropUrl, profileUrl, BLUR_PLACEHOLDER } from '@/lib/tmdb'
 import SOURCES, { getEpisodeEmbedUrl, isSourceBlocked } from '@/lib/sources'
 import { searchSubtitles, getSubtitleDownloadUrl, loadSubtitleAsBlob } from '@/lib/subtitles'
 import {
@@ -28,8 +28,10 @@ import {
 import type { TMDBSeriesDetail, TMDBSeasonDetail, TMDBEpisode, TMDBCastMember } from '@/lib/tmdb'
 import type { SubtitleResult } from '@/types/player'
 import dynamic from 'next/dynamic'
+import { FastAverageColor } from 'fast-average-color'
+import { motion } from 'framer-motion'
 
-const VideoPlayer = dynamic(() => import('@/components/player/VideoPlayer'), { ssr: false, loading: () => <div className="w-full aspect-video md:aspect-[16/9] flex items-center justify-center bg-black"><Loader2 className="w-10 h-10 animate-spin text-purple" /></div> })
+const VideoPlayer = dynamic(() => import('@/components/player/VideoPlayer'), { ssr: false, loading: () => <div className="w-full aspect-video md:aspect-[16/9] flex items-center justify-center bg-black"><Loader2 className="w-10 h-10 animate-spin text-purple-500" /></div> })
 import PlayerControls from '@/components/player/PlayerControls'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
@@ -49,6 +51,19 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
     const [loading, setLoading] = useState(true)
     const [fetchTimeout, setFetchTimeout] = useState(false)
     const [showProgressModal, setShowProgressModal] = useState(false)
+    const [dominantColor, setDominantColor] = useState<{ r: number, g: number, b: number } | null>(null)
+
+    useEffect(() => {
+        if (series?.backdrop_path) {
+            const fac = new FastAverageColor();
+            fac.getColorAsync(backdropUrl(series.backdrop_path))
+                .then(color => {
+                    const [r, g, b] = color.value;
+                    setDominantColor({ r, g, b });
+                })
+                .catch(e => logger.error("Fetch cover average color failed", e));
+        }
+    }, [series?.backdrop_path]);
 
     useEffect(() => {
         if (loading) {
@@ -79,6 +94,18 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
     const [selectedSeason, setSelectedSeason] = useState(seasonNumber)
     const showNextEpisodeBtn = true
     const [countdown, setCountdown] = useState<number | null>(null)
+    const [isSeasonDropdownOpen, setIsSeasonDropdownOpen] = useState(false)
+    const seasonDropdownRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (seasonDropdownRef.current && !seasonDropdownRef.current.contains(event.target as Node)) {
+                setIsSeasonDropdownOpen(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [])
 
     // Auto complete tracking
     const autoCompleteTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -149,10 +176,10 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                     type: 'dizi',
                     title: seriesData.name,
                     posterPath: posterUrl(seriesData.poster_path),
-                    backdropPath: seriesData.backdrop_path ? posterUrl(seriesData.backdrop_path) : undefined,
+                    backdropPath: seriesData.backdrop_path ? backdropUrl(seriesData.backdrop_path) : undefined,
                     season: seasonNumber,
                     episode: episodeNumber,
-                    episodeTitle: currentEpisode?.name || `Bölüm ${episodeNumber}`,
+                    episodeTitle: sData?.episodes.find(e => e.episode_number === episodeNumber)?.name || `Bölüm ${episodeNumber}`,
                     totalEpisodes: seriesData.number_of_episodes,
                     watchedEpisodes: epListUrl.length,
                     timeSpentSeconds: progress?.season === seasonNumber && progress?.episode === episodeNumber ? progress.timeSpentSeconds : 0,
@@ -167,13 +194,14 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
         return () => {
             isMounted = false;
         }
-    }, [seriesId, seasonNumber, episodeNumber, currentEpisode?.name])
+    }, [seriesId, seasonNumber, episodeNumber])
 
     // Yarıda bırakma süresini takip et (10 saniyede bir kaydet)
     useEffect(() => {
         if (!series) return;
 
         const interval = setInterval(async () => {
+            if (document.hidden) return; // Don't track time when tab is backgrounded
             const currentProgress = await getWatchProgress(seriesId, "dizi");
             if (currentProgress && currentProgress.season === seasonNumber && currentProgress.episode === episodeNumber) {
                 await saveWatchProgress({
@@ -207,6 +235,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
     // Auto complete tracking (5 mins)
     useEffect(() => {
         if (!loading && currentEpisode && series) {
+            const epName = currentEpisode.name
             autoCompleteTimerRef.current = setTimeout(async () => {
                 await markEpisodeWatched(seriesId, seasonNumber, episodeNumber)
                 const epListUrl = await getWatchedEpisodes(seriesId);
@@ -216,10 +245,10 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                     type: 'dizi',
                     title: series.name,
                     posterPath: posterUrl(series.poster_path),
-                    backdropPath: series.backdrop_path ? posterUrl(series.backdrop_path) : undefined,
+                    backdropPath: series.backdrop_path ? backdropUrl(series.backdrop_path) : undefined,
                     season: seasonNumber,
                     episode: episodeNumber,
-                    episodeTitle: currentEpisode.name,
+                    episodeTitle: epName,
                     totalEpisodes: series.number_of_episodes,
                     watchedEpisodes: epListUrl.length,
                     updatedAt: new Date().toISOString()
@@ -232,7 +261,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                 clearTimeout(autoCompleteTimerRef.current)
             }
         }
-    }, [loading, currentEpisode, series, seriesId, seasonNumber, episodeNumber])
+    }, [loading, series, seriesId, seasonNumber, episodeNumber])
 
     // Next / Prev logic
     const getNextEpisodeInfo = useCallback(() => {
@@ -495,23 +524,23 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
 
     if (loading && !fetchTimeout) {
         return (
-            <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col pb-20 animate-pulse">
-                <header className="sticky top-0 z-50 w-full bg-bg-primary/80 border-b border-border h-16 flex items-center px-4 sm:px-6">
-                    <div className="w-8 h-8 rounded-full bg-bg-card" />
-                    <div className="w-48 h-5 ml-4 bg-bg-card rounded hidden sm:block" />
+            <div className="min-h-screen bg-bg-primary text-white flex flex-col pb-20 animate-pulse">
+                <header className="sticky top-0 z-50 w-full bg-bg-primary/80 border-b border-border-dim h-16 flex items-center px-4 sm:px-6">
+                    <div className="w-8 h-8 rounded-full bg-raised" />
+                    <div className="w-48 h-5 ml-4 bg-raised rounded hidden sm:block" />
                 </header>
-                <section className="w-full bg-black border-b border-border">
-                    <div className="w-full max-w-[1400px] mx-auto aspect-video md:aspect-[16/9] bg-bg-card/30" />
+                <section className="w-full bg-black border-b border-border-dim">
+                    <div className="w-full max-w-[1400px] mx-auto aspect-video md:aspect-[16/9] bg-raised/30" />
                 </section>
                 <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
                     <div className="w-full lg:w-2/3 flex flex-col gap-4">
-                        <div className="w-3/4 h-8 bg-bg-card rounded" />
-                        <div className="w-1/2 h-4 bg-bg-card rounded" />
-                        <div className="w-full h-32 bg-bg-card rounded mt-4" />
+                        <div className="w-3/4 h-8 bg-raised rounded" />
+                        <div className="w-1/2 h-4 bg-raised rounded" />
+                        <div className="w-full h-32 bg-raised rounded mt-4" />
                     </div>
                     <div className="w-full lg:w-1/3 flex flex-col gap-4">
-                        <div className="w-full h-24 bg-bg-card rounded" />
-                        <div className="w-full h-64 bg-bg-card rounded" />
+                        <div className="w-full h-24 bg-raised rounded" />
+                        <div className="w-full h-64 bg-raised rounded" />
                     </div>
                 </section>
             </div>
@@ -520,9 +549,9 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
 
     if (!series || !seasonData || fetchTimeout) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-text-primary bg-bg-primary">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-white bg-bg-primary">
                 <h1 className="text-2xl font-bold font-display">{fetchTimeout ? "Sunucu yanıt vermiyor." : "Dizi bulunamadı."}</h1>
-                <p className="text-text-secondary">Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.</p>
+                <p className="text-text-sec">Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.</p>
                 <Link href="/">
                     <Button variant="primary">Ana Sayfaya Dön</Button>
                 </Link>
@@ -535,13 +564,25 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
     const activeSource = SOURCES[sourceIndex]
 
     return (
-        <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col pb-20">
+        <div className="min-h-screen bg-bg-primary text-white flex flex-col pb-20 relative">
+            {dominantColor && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1.5 }}
+                    className="absolute inset-0 pointer-events-none mix-blend-screen z-0"
+                    style={{
+                        background: `radial-gradient(circle at 50% 15%, rgba(${dominantColor.r}, ${dominantColor.g}, ${dominantColor.b}, 0.25) 0%, transparent 50%)`
+                    }}
+                />
+            )}
+
             {/* PROGRESS MODAL */}
             {showProgressModal && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-bg-card border border-border rounded-xl p-6 max-w-md w-full animate-fade-in text-center">
-                        <h3 className="text-xl font-bold font-display text-text-primary mb-2">Kaldığın Yerden Devam Et</h3>
-                        <p className="text-text-secondary text-sm mb-6">
+                    <div className="bg-raised border border-border-dim-dim rounded-2xl p-6 max-w-md w-full animate-fade-in text-center">
+                        <h3 className="text-xl font-bold font-display text-white mb-2">Kaldığın Yerden Devam Et</h3>
+                        <p className="text-text-sec text-sm mb-6">
                             Bu bölümü daha önce izlemeye başlamışsınız. Kaldığınız yerden devam edebilir veya baştan başlayabilirsiniz.
                         </p>
                         <div className="flex gap-4 justify-center">
@@ -553,11 +594,11 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
             )}
 
             {/* 1. MİNİMAL ÜST BAR */}
-            <header className="sticky top-0 z-50 w-full bg-bg-primary/80 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6">
+            <header className="relative z-50 w-full bg-transparent bg-gradient-to-b from-black/80 to-transparent h-20 flex items-center justify-between px-4 sm:px-6">
                 <div className="flex items-center gap-3">
                     <Link
                         href={`/dizi/${seriesId}`}
-                        className="flex items-center gap-3 text-text-secondary hover:text-text-primary transition-colors group"
+                        className="flex items-center gap-3 text-text-sec hover:text-white transition-colors group"
                     >
                         <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors">
                             <ChevronLeft size={20} />
@@ -569,7 +610,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                         <button
                             onClick={() => prevInfo && goToEpisode(prevInfo.s, prevInfo.e)}
                             disabled={!prevInfo}
-                            className={`p-2 rounded-lg transition-colors ${prevInfo ? 'text-text-primary hover:bg-bg-hover cursor-pointer' : 'text-text-muted cursor-not-allowed'}`}
+                            className={`p-2 rounded-lg transition-colors ${prevInfo ? 'text-white hover:bg-bg-hover cursor-pointer' : 'text-text-muted cursor-not-allowed'}`}
                             title={prevInfo ? `S${prevInfo.s}E${prevInfo.e}` : 'Önceki Bölüm Yok'}
                         >
                             <ChevronLeft size={20} />
@@ -577,7 +618,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                         <button
                             onClick={() => nextInfo && goToEpisode(nextInfo.s, nextInfo.e)}
                             disabled={!nextInfo}
-                            className={`p-2 rounded-lg transition-colors ${nextInfo ? 'text-text-primary hover:bg-bg-hover cursor-pointer' : 'text-text-muted cursor-not-allowed'}`}
+                            className={`p-2 rounded-lg transition-colors ${nextInfo ? 'text-white hover:bg-bg-hover cursor-pointer' : 'text-text-muted cursor-not-allowed'}`}
                             title={nextInfo ? `S${nextInfo.s}E${nextInfo.e}` : 'Sonraki Bölüm Yok'}
                         >
                             <ChevronRight size={20} />
@@ -591,7 +632,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
 
                 <Link
                     href={`/dizi/${seriesId}`}
-                    className="flex items-center gap-2 text-sm font-medium text-purple hover:text-purple-light transition-colors"
+                    className="flex items-center gap-2 text-sm font-medium text-purple-500 hover:text-purple-500-light transition-colors"
                 >
                     <span className="hidden sm:inline">Detay Sayfası</span>
                     <ExternalLink size={16} />
@@ -600,12 +641,12 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
 
             {/* 2. VIDEO PLAYER ALANI */}
             <section
-                className="w-full bg-black flex justify-center border-b border-border relative select-none touch-pan-y"
+                className="relative w-full flex justify-center px-0 sm:px-6 lg:px-8 mt-2 z-10 select-none touch-pan-y"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
-                <div className="w-full max-w-[1400px]">
+                <div className="w-full max-w-7xl">
                     <VideoPlayer
                         embedUrl={embedUrl}
                         title={`${series.name} S${seasonNumber}E${episodeNumber}`}
@@ -621,8 +662,8 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
             </section>
 
             {/* 3. PLAYER CONTROLS & AUTO NEXT */}
-            <section className="w-full flex flex-col items-center bg-bg-card border-b border-border">
-                <div className="w-full max-w-[1400px]">
+            <section className="relative w-full flex flex-col items-center z-10">
+                <div className="w-full max-w-7xl px-0 sm:px-6 lg:px-8">
                     <PlayerControls
                         sources={SOURCES}
                         activeSourceIndex={sourceIndex}
@@ -642,10 +683,10 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
 
                     {/* Auto Next Section */}
                     {showNextEpisodeBtn && (
-                        <div className="w-full px-4 py-3 border-t border-border flex justify-end items-center gap-4">
+                        <div className="w-full px-4 py-3 border-t border-border-dim flex justify-end items-center gap-4">
                             {countdown !== null ? (
                                 <div className="flex items-center gap-3">
-                                    <span className="text-sm text-text-secondary animate-pulse">Sonraki bölüme geçiliyor ({countdown})...</span>
+                                    <span className="text-sm text-text-sec animate-pulse">Sonraki bölüme geçiliyor ({countdown})...</span>
                                     <Button variant="secondary" onClick={cancelCountdown} className="h-8 py-0 px-3 text-xs">İptal</Button>
                                     <Button variant="primary" onClick={() => goToEpisode(nextInfo!.s, nextInfo!.e)} className="h-8 py-0 px-3 text-xs disabled:opacity-50">Geç</Button>
                                 </div>
@@ -688,20 +729,20 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
             </section>
 
             {/* 4. İÇERİK BİLGİSİ ALANI */}
-            <section className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
+            <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8 relative z-10">
 
                 {/* SOL KOLON (2/3) */}
                 <div className="flex-1 lg:w-2/3 flex flex-col gap-6 order-2 lg:order-1">
                     <div>
-                        <h1 className="font-display text-[28px] font-bold text-text-primary mb-3 leading-tight">
+                        <h1 className="font-display text-[28px] font-bold text-white mb-3 leading-tight">
                             {series.name} - S{seasonNumber}E{episodeNumber}
                         </h1>
-                        <h2 className="text-xl font-medium text-text-secondary mb-3">
+                        <h2 className="text-xl font-medium text-text-sec mb-3">
                             {currentEpisode?.name}
                         </h2>
                         <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Badge variant="default" className="text-xs bg-bg-card">{year}</Badge>
-                            <Badge variant="default" className="text-xs bg-bg-card">{formatRuntime(currentEpisode?.runtime || series.episode_run_time?.[0])}</Badge>
+                            <Badge variant="default" className="text-xs bg-raised">{year}</Badge>
+                            <Badge variant="default" className="text-xs bg-raised">{formatRuntime(currentEpisode?.runtime || series.episode_run_time?.[0])}</Badge>
                             {series.genres.slice(0, 3).map(g => (
                                 <Badge key={g.id} variant="purple" className="text-xs">{g.name}</Badge>
                             ))}
@@ -709,13 +750,13 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                     </div>
 
                     {currentEpisode?.overview ? (
-                        <p className="text-text-secondary text-base leading-relaxed">
+                        <p className="text-text-sec text-base leading-relaxed">
                             {currentEpisode.overview}
                         </p>
                     ) : series.overview && (
                         <div className="flex flex-col gap-2">
                             <span className="text-xs text-text-muted uppercase tracking-wider">Dizi Özeti</span>
-                            <p className="text-text-secondary text-base leading-relaxed">
+                            <p className="text-text-sec text-base leading-relaxed">
                                 {series.overview}
                             </p>
                         </div>
@@ -723,7 +764,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
 
                     {/* Oyuncu Kadrosu */}
                     {series.credits?.cast && series.credits.cast.length > 0 && (
-                        <div className="pt-4 border-t border-border mt-4">
+                        <div className="pt-4 border-t border-border-dim mt-4">
                             <h3 className="font-medium text-lg mb-4">Oyuncular</h3>
                             <ScrollableRow innerClassName="flex gap-4">
                                 {series.credits.cast.slice(0, 15).map((actor: TMDBCastMember) => (
@@ -738,34 +779,50 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                 <div className="w-full lg:w-1/3 flex flex-col gap-6 order-1 lg:order-2">
 
                     {/* Şu An İzliyorsun Kartı */}
-                    <Card className="border-purple/50 shadow-purple-glow p-5 flex flex-col gap-4">
+                    <Card className="border-purple-500/50 shadow-glow-sm p-5 flex flex-col gap-4">
                         <div className="flex items-start gap-4">
-                            <div className="p-3 bg-purple/10 rounded-xl text-purple">
+                            <div className="p-3 bg-purple-500/10 rounded-xl text-purple-500">
                                 <PlayCircle size={28} />
                             </div>
                             <div>
-                                <p className="text-xs text-text-secondary font-medium uppercase tracking-wider mb-1">Şu An İzliyorsun</p>
-                                <h3 className="font-display font-bold text-text-primary leading-tight line-clamp-2">{series.name}</h3>
+                                <p className="text-xs text-text-sec font-medium uppercase tracking-wider mb-1">Şu An İzliyorsun</p>
+                                <h3 className="font-display font-bold text-white leading-tight line-clamp-2">{series.name}</h3>
                                 <p className="text-sm text-text-muted mt-1">S{seasonNumber}E{episodeNumber} • {activeSource.name}</p>
                             </div>
                         </div>
                     </Card>
 
                     {/* BÖLÜM SEÇİCİ */}
-                    <div className="flex flex-col border border-border bg-bg-card rounded-2xl overflow-hidden shadow-lg">
-                        <div className="p-4 border-b border-border bg-bg-primary/50">
+                    <div className="flex flex-col border border-border-dim bg-raised rounded-2xl overflow-hidden shadow-lg">
+                        <div className="p-4 border-b border-border-dim bg-bg-primary/50">
                             {/* Season Select */}
-                            <select
-                                className="w-full bg-bg border border-border text-text-primary text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-purple/50 focus:border-purple outline-none"
-                                value={selectedSeason}
-                                onChange={(e) => setSelectedSeason(Number(e.target.value))}
-                            >
-                                {series.seasons.filter(s => s.season_number > 0).map((s) => (
-                                    <option key={s.id} value={s.season_number}>
-                                        Sezon {s.season_number} ({s.episode_count} bölüm)
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="relative" ref={seasonDropdownRef}>
+                                <button
+                                    onClick={() => setIsSeasonDropdownOpen(!isSeasonDropdownOpen)}
+                                    className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-overlay/50 border border-border-dim hover:bg-overlay hover:border-border transition-all duration-200 text-sm font-medium text-white rounded-xl"
+                                >
+                                    <span>Sezon {selectedSeason}</span>
+                                    <ChevronDown size={16} className={`text-text-muted transition-transform duration-200 ${isSeasonDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isSeasonDropdownOpen && (
+                                    <div className="absolute top-full left-0 right-0 max-h-60 overflow-y-auto custom-scrollbar bg-raised border border-border-dim rounded-xl shadow-xl z-50 backdrop-blur-xl flex flex-col mt-2">
+                                        {series.seasons.filter(s => s.season_number > 0).map((s) => (
+                                            <button
+                                                key={s.id}
+                                                onClick={() => {
+                                                    setSelectedSeason(s.season_number)
+                                                    setIsSeasonDropdownOpen(false)
+                                                }}
+                                                className={`flex items-center justify-between w-full px-4 py-3 text-left text-sm transition-colors border-b border-border-dim/50 last:border-0 ${selectedSeason === s.season_number ? 'bg-purple-500/10 text-purple-500 font-bold' : 'text-white hover:bg-overlay font-medium'}`}
+                                            >
+                                                <span>Sezon {s.season_number}</span>
+                                                <span className="text-xs opacity-60">({s.episode_count} bölüm)</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -789,7 +846,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                     <div className="flex flex-col gap-3">
                         <Button
                             variant="secondary"
-                            className={`w-full justify-start ${inWatchlist ? '!border-purple !text-purple bg-purple/5' : ''}`}
+                            className={`w-full justify-start ${inWatchlist ? '!border-purple-500 !text-purple-500 bg-purple-500/5' : ''}`}
                             icon={Bookmark}
                             onClick={handleWatchlist}
                         >
@@ -807,14 +864,14 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                         <div className="relative">
                             <Button
                                 variant="secondary"
-                                className="w-full justify-start text-rating border-border hover:border-rating/50 hover:bg-rating/5"
+                                className="w-full justify-start text-rating border-border-dim hover:border-rating/50 hover:bg-rating/5"
                                 icon={Star}
                                 onClick={() => setShowRating(!showRating)}
                             >
                                 Puan Ver
                             </Button>
                             {showRating && (
-                                <div className="absolute top-full mt-2 right-0 z-20 w-full sm:w-auto p-3 bg-bg-card border border-border rounded-xl shadow-xl">
+                                <div className="absolute top-full mt-2 right-0 z-20 w-full sm:w-auto p-3 bg-raised border border-border-dim rounded-xl shadow-xl">
                                     <RatingPicker
                                         id={seriesId}
                                         type="dizi"
@@ -842,7 +899,7 @@ function ActorCard({ actor }: { actor: TMDBCastMember }) {
 
     return (
         <Link href={`/oyuncu/${actor.id}`} className="group w-[80px] flex-shrink-0">
-            <div className="relative w-[80px] h-[80px] rounded-full overflow-hidden bg-bg-card border-2 border-border group-hover:border-purple transition-colors mb-2">
+            <div className="relative w-[80px] h-[80px] rounded-full overflow-hidden bg-raised border-2 border-border-dim group-hover:border-purple-500 transition-colors mb-2">
                 {actor.profile_path && !imgError ? (
                     <Image
                         src={profileUrl(actor.profile_path)}
@@ -860,7 +917,7 @@ function ActorCard({ actor }: { actor: TMDBCastMember }) {
                     </div>
                 )}
             </div>
-            <p className="text-xs font-medium text-text-primary text-center truncate group-hover:text-purple transition-colors">
+            <p className="text-xs font-medium text-white text-center truncate group-hover:text-purple-500 transition-colors">
                 {actor.name}
             </p>
         </Link>
@@ -892,13 +949,13 @@ function EpisodeRow({
     return (
         <button
             onClick={() => goToEpisode(selectedSeason, ep.episode_number)}
-            className={`flex items-center justify-between p-3 border-b border-border/50 text-left transition-colors last:border-0
+            className={`flex items-center justify-between p-3 border-b border-border-dim/50 text-left transition-colors last:border-0
                 ${isCurrent ? 'bg-bg-hover border-l-4 border-l-purple' : 'hover:bg-bg-hover border-l-4 border-l-transparent'}
-                ${watched && !isCurrent ? 'text-text-muted' : 'text-text-primary'}
+                ${watched && !isCurrent ? 'text-text-muted' : 'text-white'}
             `}
         >
             <div className="flex items-center gap-3 overflow-hidden flex-1">
-                <span className="text-xs font-medium bg-bg px-1.5 py-0.5 rounded text-text-secondary min-w-[40px] text-center">
+                <span className="text-xs font-medium bg-bg px-1.5 py-0.5 rounded text-text-sec min-w-[40px] text-center">
                     S{selectedSeason}E{ep.episode_number}
                 </span>
                 <span className="text-sm truncate">

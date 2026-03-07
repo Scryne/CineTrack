@@ -8,6 +8,9 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(clients.claim());
 });
 
+// Zamanlanan timeout ID'lerini takip et
+const scheduledTimeouts = [];
+
 // Mesaj dinleyici — ana uygulamadan mesaj alır
 self.addEventListener('message', (event) => {
     if (event.data?.type === 'SCHEDULE_NOTIFICATION') {
@@ -15,7 +18,7 @@ self.addEventListener('message', (event) => {
         const delay = new Date(scheduledTime).getTime() - Date.now();
 
         if (delay > 0) {
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
                 self.registration.showNotification(title, {
                     body,
                     icon: icon || '/icons/icon-192x192.png',
@@ -28,11 +31,13 @@ self.addEventListener('message', (event) => {
                     ]
                 });
             }, delay);
+            scheduledTimeouts.push(timeoutId);
         }
     }
 
     if (event.data?.type === 'CANCEL_NOTIFICATIONS') {
-        // Tüm bekleyen bildirimleri iptal et (Timeout id'leri saklanıp temizlenebilir)
+        scheduledTimeouts.forEach(clearTimeout);
+        scheduledTimeouts.length = 0;
     }
 });
 

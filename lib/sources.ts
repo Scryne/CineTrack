@@ -4,31 +4,31 @@ import { Source } from '@/types/player'
 
 const SOURCES: Source[] = [
     {
-        id: 'vidsrc-to',
+        id: 'autoembed',
         name: 'Kaynak 1',
-        getMovieUrl: (id) => `https://vidsrc.to/embed/movie/${id}`,
-        getEpisodeUrl: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
+        getMovieUrl: (id) => `https://autoembed.co/movie/tmdb/${id}`,
+        getEpisodeUrl: (id, s, e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}`,
         isAvailable: true,
     },
     {
-        id: 'vidsrc-me',
+        id: 'smashystream',
         name: 'Kaynak 2',
-        getMovieUrl: (id) => `https://vidsrc.me/embed/movie?tmdb=${id}`,
-        getEpisodeUrl: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}`,
+        getMovieUrl: (id) => `https://player.smashy.stream/movie/${id}`,
+        getEpisodeUrl: (id, s, e) => `https://player.smashy.stream/tv/${id}?s=${s}&e=${e}`,
         isAvailable: true,
     },
     {
-        id: 'superembed',
+        id: 'vidsrc-net',
         name: 'Kaynak 3',
+        getMovieUrl: (id) => `https://vidsrc.net/embed/movie?tmdb=${id}`,
+        getEpisodeUrl: (id, s, e) => `https://vidsrc.net/embed/tv?tmdb=${id}&season=${s}&episode=${e}`,
+        isAvailable: true,
+    },
+    {
+        id: 'multiembed',
+        name: 'Kaynak 4',
         getMovieUrl: (id) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
         getEpisodeUrl: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}`,
-        isAvailable: true,
-    },
-    {
-        id: '2embed',
-        name: 'Kaynak 4',
-        getMovieUrl: (id) => `https://www.2embed.cc/embed/${id}`,
-        getEpisodeUrl: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`,
         isAvailable: true,
     },
 ]
@@ -188,9 +188,13 @@ export function markSourceBlocked(sourceId: string): void {
 export function isSourceBlocked(sourceId: string): boolean {
     if (typeof window === 'undefined') return false
     const key = `source_blocked_${sourceId}`
-    const expiry = sessionStorage.getItem(key)
-    if (!expiry) return false
-    if (Date.now() > parseInt(expiry)) {
+    const expiryStr = sessionStorage.getItem(key)
+    if (!expiryStr) return false
+
+    const expiry = parseInt(expiryStr, 10)
+    if (isNaN(expiry)) return false
+
+    if (Date.now() > expiry) {
         sessionStorage.removeItem(key)
         return false
     }

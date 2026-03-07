@@ -34,5 +34,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
+    // Don't render protected content if user is not authenticated
+    const protectedRoutes = [
+        '/koleksiyon', '/dizilerim', '/gecmis',
+        '/profil', '/oneriler',
+        '/listeler', '/izle'
+    ];
+    const isProtected = protectedRoutes.some(route => pathname?.startsWith(route));
+    
+    if (isProtected && !user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-bg-main">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        );
+    }
+
     return <>{children}</>;
 }

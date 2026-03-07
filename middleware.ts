@@ -9,8 +9,12 @@ export async function middleware(req: NextRequest) {
         },
     })
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return NextResponse.next()
+    }
 
     const supabase = createServerClient(
         supabaseUrl,
@@ -20,14 +24,14 @@ export async function middleware(req: NextRequest) {
                 get(name: string) {
                     return req.cookies.get(name)?.value
                 },
-                set(name: string, value: string, options: any) {
+                set(name: string, value: string, options: Record<string, unknown>) {
                     req.cookies.set({ name, value, ...options })
                     res = NextResponse.next({
                         request: { headers: req.headers },
                     })
                     res.cookies.set({ name, value, ...options })
                 },
-                remove(name: string, options: any) {
+                remove(name: string, options: Record<string, unknown>) {
                     req.cookies.set({ name, value: '', ...options })
                     res = NextResponse.next({
                         request: { headers: req.headers },
@@ -38,9 +42,10 @@ export async function middleware(req: NextRequest) {
         }
     )
 
+    // getUser() validates JWT, unlike getSession() which only reads cookies
     const {
-        data: { session },
-    } = await supabase.auth.getSession()
+        data: { user },
+    } = await supabase.auth.getUser()
 
     // Korumalı rotalar — giriş yapılmamışsa /auth'a yönlendir
     const protectedRoutes = [
@@ -53,12 +58,12 @@ export async function middleware(req: NextRequest) {
     const isProtectedRoute = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route))
 
     // Redirect to login if unauthenticated user tries to access a protected route
-    if (isProtectedRoute && !session) {
+    if (isProtectedRoute && !user) {
         return NextResponse.redirect(new URL('/auth', req.url))
     }
 
-    // Redirect to profile if authenticated user tries to access login page
-    if (req.nextUrl.pathname.startsWith('/auth') && session) {
+    // Redirect to home if authenticated user tries to access login page
+    if (req.nextUrl.pathname.startsWith('/auth') && user) {
         return NextResponse.redirect(new URL('/', req.url))
     }
 

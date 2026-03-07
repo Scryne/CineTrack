@@ -1,31 +1,30 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
-import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 
 export function useUser() {
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
 
     useEffect(() => {
-        supabase.auth.getSession().then((response: { data: { session: Session | null } }) => {
-            setUser(response.data.session?.user ?? null)
-            setLoading(false)
-        })
-
+        // Use onAuthStateChange which fires INITIAL_SESSION on mount
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (_event: AuthChangeEvent, session: Session | null) => {
+            (event, session) => {
                 setUser(session?.user ?? null)
+                if (event === 'INITIAL_SESSION') {
+                    setLoading(false)
+                }
             }
         )
 
         return () => subscription.unsubscribe()
-    }, [])
+    }, [supabase])
 
-    const signOut = async () => {
+    const signOut = useCallback(async () => {
         await supabase.auth.signOut()
-    }
+    }, [supabase])
 
     return { user, loading, signOut }
 }

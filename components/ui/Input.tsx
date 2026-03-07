@@ -38,7 +38,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     return (
         <div className={`relative ${className}`}>
             {Icon && (
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted transition-colors">
                     <Icon size={18} />
                 </div>
             )}
@@ -53,13 +53,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
                 onKeyDown={onKeyDown}
                 required={required}
                 minLength={minLength}
-                className={`w-full bg-[#1A1A24] border border-[#2A2A35] rounded-xl py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple-DEFAULT focus:ring-1 focus:ring-purple-DEFAULT/30 transition-colors ${Icon ? "pl-11 pr-4" : "px-4"} ${clearable && value ? "pr-10" : ""}`}
+                className={`peer w-full bg-[#1A1A24] border border-[#2A2A35] rounded-xl py-3 text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-purple-DEFAULT focus:ring-2 focus:ring-purple-DEFAULT/20 focus:bg-[#1C1C28] transition-all duration-200 ${Icon ? "pl-11 pr-4" : "px-4"} ${clearable && value ? "pr-10" : ""}`}
             />
             {clearable && value && (
                 <button
                     type="button"
                     onClick={() => onChange("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors p-0.5 rounded-md hover:bg-white/5"
                 >
                     <X size={16} />
                 </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -10,9 +10,11 @@ import { posterUrl } from "@/lib/tmdb";
 import type { WatchProgress } from "@/types/player";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import EmptyState from "@/components/ui/EmptyState";
+import ProgressBar from "@/components/ui/ProgressBar";
 import toast from "react-hot-toast";
 
-export default function HistoryPage() {
+export default function HistoryPage(): React.ReactElement {
     const [history, setHistory] = useState<WatchProgress[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -21,11 +23,10 @@ export default function HistoryPage() {
     const [showClearModal, setShowClearModal] = useState(false);
     const limit = 20;
 
-    const fetchHistory = async (currentPage: number, isRefresh: boolean = false) => {
+    const fetchHistory = async (currentPage: number, isRefresh: boolean = false): Promise<void> => {
         if (!isRefresh) setLoadingMore(true);
         const newItems = await getAllProgress(limit, currentPage * limit);
         if (newItems.length < limit) setHasMore(false);
-
         setHistory(prev => isRefresh ? newItems : [...prev, ...newItems]);
         setLoading(false);
         setLoadingMore(false);
@@ -33,29 +34,30 @@ export default function HistoryPage() {
 
     useEffect(() => {
         fetchHistory(0, true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleLoadMore = () => {
+    const handleLoadMore = (): void => {
         const nextPage = page + 1;
         setPage(nextPage);
         fetchHistory(nextPage);
     };
 
-    const handleRemove = async (tmdbId: string, type: "film" | "dizi") => {
+    const handleRemove = async (tmdbId: string, type: "film" | "dizi"): Promise<void> => {
         await removeProgress(tmdbId, type);
         setHistory(prev => prev.filter(h => h.tmdbId !== tmdbId || h.type !== type));
-        toast.success("Geçmişten silindi.");
+        toast.success("Gecmisten silindi.");
     };
 
-    const handleClearAll = async () => {
+    const handleClearAll = async (): Promise<void> => {
         await clearAllProgress();
         setHistory([]);
         setShowClearModal(false);
-        toast.success("Tüm izleme geçmişiniz temizlendi.");
+        toast.success("Tum izleme gecmisiniz temizlendi.");
     };
 
     // Group history by date
-    const groupedHistory = history.reduce((acc, item) => {
+    const groupedHistory = useMemo(() => history.reduce((acc, item) => {
         const date = new Date(item.updatedAt);
         const today = new Date();
         const yesterday = new Date(today);
@@ -63,91 +65,82 @@ export default function HistoryPage() {
         const oneWeekAgo = new Date(today);
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        let group = "Daha Önce";
-
-        if (date.toDateString() === today.toDateString()) {
-            group = "Bugün";
-        } else if (date.toDateString() === yesterday.toDateString()) {
-            group = "Dün";
-        } else if (date > oneWeekAgo) {
-            group = "Bu Hafta";
-        }
+        let group = "Daha Once";
+        if (date.toDateString() === today.toDateString()) group = "Bugun";
+        else if (date.toDateString() === yesterday.toDateString()) group = "Dun";
+        else if (date > oneWeekAgo) group = "Bu Hafta";
 
         if (!acc[group]) acc[group] = [];
         acc[group].push(item);
         return acc;
-    }, {} as Record<string, WatchProgress[]>);
+    }, {} as Record<string, WatchProgress[]>), [history]);
 
-    const groupOrder = ["Bugün", "Dün", "Bu Hafta", "Daha Önce"];
+    const groupOrder = ["Bugun", "Dun", "Bu Hafta", "Daha Once"];
 
     if (loading) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-DEFAULT"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500" />
             </div>
         );
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+        <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+            className="max-w-[1400px] mx-auto px-16 py-12 max-lg:px-6 max-md:px-4 max-md:py-8"
+        >
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="font-display text-3xl font-bold text-text-primary mb-2 flex items-center gap-3">
-                        <History className="text-purple-DEFAULT" size={32} />
-                        İzleme Geçmişi
-                    </h1>
-                    <p className="text-text-secondary">Son izlediğiniz dizi ve filmlere kaldığınız yerden devam edin.</p>
+                    <h1 className="font-display text-[28px] text-white mb-1">Izleme Gecmisi</h1>
+                    <p className="text-[14px] text-text-sec">Son izlediginiz dizi ve filmlere kaldiginiz yerden devam edin.</p>
                 </div>
-
                 {history.length > 0 && (
                     <Button
                         variant="secondary"
-                        className="text-error border-error/50 hover:bg-error/10 hover:border-error w-full md:w-auto justify-center"
+                        className="text-err border-err/50 hover:bg-err/10 w-full md:w-auto justify-center"
                         icon={Trash2}
                         onClick={() => setShowClearModal(true)}
                     >
-                        Geçmişi Temizle
+                        Gecmisi Temizle
                     </Button>
                 )}
             </div>
 
             {history.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-bg-card border border-border rounded-3xl">
-                    <div className="w-16 h-16 rounded-full bg-bg-hover flex items-center justify-center mb-4 text-text-muted">
-                        <History size={32} />
-                    </div>
-                    <h2 className="text-xl font-medium text-text-primary mb-2">Henüz geçmişinizde bir şey yok</h2>
-                    <p className="text-text-secondary max-w-md mx-auto mb-6">
-                        İzlemeye başladığınız film ve diziler burada listelenecektir.
-                    </p>
-                    <Link href="/kesif">
-                        <Button variant="primary">Keşfetmeye Başla</Button>
-                    </Link>
-                </div>
+                <EmptyState
+                    icon={History}
+                    title="Henuz gecmisinizde bir sey yok"
+                    description="Izlemeye basladiginiz film ve diziler burada listelenecektir."
+                    action={{ label: "Kesfetmeye Basla", href: "/kesif" }}
+                />
             ) : (
-                <div className="space-y-12">
+                <div className="space-y-10">
                     {groupOrder.map((group) => {
                         const items = groupedHistory[group];
                         if (!items || items.length === 0) return null;
 
                         return (
                             <div key={group}>
-                                <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2">
-                                    <Calendar size={16} />
+                                <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[2px] mb-4 flex items-center gap-2">
+                                    <Calendar size={13} />
                                     {group}
                                 </h3>
 
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {items.map((item) => (
                                         <motion.div
                                             key={`${item.type}-${item.tmdbId}`}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-bg-card border border-border hover:border-purple/50 rounded-2xl p-3 sm:p-4 transition-all hover:shadow-lg hover:shadow-black/20"
+                                            className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-raised border border-border-dim hover:border-border-bright rounded-xl p-3 transition-all"
                                         >
                                             <Link
                                                 href={`/izle/${item.type}/${item.tmdbId}${item.type === "dizi" ? `/${item.season}/${item.episode}` : ""}`}
-                                                className="block flex-shrink-0 w-full sm:w-[90px] h-[135px] sm:h-[135px] relative rounded-lg overflow-hidden border border-border"
+                                                className="block flex-shrink-0 w-full sm:w-20 h-[120px] sm:h-[120px] relative rounded-lg overflow-hidden"
                                             >
                                                 <Image
                                                     src={posterUrl(item.posterPath)}
@@ -156,67 +149,59 @@ export default function HistoryPage() {
                                                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                                                 />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <PlayCircle className="text-white" size={32} />
+                                                    <PlayCircle className="text-white" size={28} />
                                                 </div>
                                             </Link>
 
                                             <div className="flex-1 min-w-0 pr-10 sm:pr-0">
-                                                <div className="flex items-center gap-2 mb-1.5">
-                                                    <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-white/5 text-text-muted">
-                                                        {item.type === "film" ? "Kaldığın Yer" : "Son İzlenen"}
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-[10px] font-bold tracking-[1.5px] uppercase px-2 py-0.5 rounded-md bg-white/[0.05] text-text-muted border border-white/[0.06]">
+                                                        {item.type === "film" ? "Film" : "Dizi"}
                                                     </span>
-                                                    <span className="text-xs text-text-secondary">
-                                                        {new Date(item.updatedAt).toLocaleTimeString("tr-TR", {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                        })}
+                                                    <span className="text-[11px] text-text-dim font-mono">
+                                                        {new Date(item.updatedAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                                                     </span>
                                                 </div>
                                                 <Link
                                                     href={`/${item.type}/${item.tmdbId}`}
-                                                    className="inline-block font-display text-lg font-bold text-text-primary hover:text-purple-light transition-colors mb-1 truncate max-w-full"
+                                                    className="inline-block text-[15px] font-semibold text-white hover:text-purple-300 transition-colors mb-0.5 truncate max-w-full"
                                                 >
                                                     {item.title}
                                                 </Link>
                                                 {item.type === "dizi" && (
-                                                    <p className="text-sm font-medium text-purple-light truncate max-w-full mb-2">
+                                                    <p className="text-[13px] text-purple-300 truncate max-w-full">
                                                         S{item.season}E{item.episode} · {item.episodeTitle}
                                                     </p>
                                                 )}
                                                 {item.type === "dizi" && item.totalEpisodes && item.watchedEpisodes !== undefined && (
-                                                    <div className="mt-2 mb-3 max-w-[200px]">
-                                                        <div className="flex items-center justify-between text-xs text-text-muted mb-1 font-medium">
-                                                            <span>Sezon İlerlemesi</span>
-                                                            <span>{Math.round((item.watchedEpisodes / item.totalEpisodes) * 100)}%</span>
+                                                    <div className="mt-2 max-w-[200px]">
+                                                        <div className="flex items-center justify-between text-[10px] text-text-muted mb-1">
+                                                            <span>Sezon Ilerlemesi</span>
+                                                            <span className="font-mono">{Math.round((item.watchedEpisodes / item.totalEpisodes) * 100)}%</span>
                                                         </div>
-                                                        <div className="h-1.5 w-full bg-bg rounded-full overflow-hidden">
-                                                            <div
-                                                                className="h-full bg-purple rounded-full transition-all"
-                                                                style={{ width: `${Math.min((item.watchedEpisodes / item.totalEpisodes) * 100, 100)}%` }}
-                                                            />
-                                                        </div>
+                                                        <ProgressBar value={Math.min((item.watchedEpisodes / item.totalEpisodes) * 100, 100)} color="purple" size="xs" />
                                                     </div>
                                                 )}
                                             </div>
 
                                             <div className="absolute top-3 right-3 sm:static sm:top-0 sm:right-0 flex sm:flex-col items-center gap-2">
                                                 <Link href={`/izle/${item.type}/${item.tmdbId}${item.type === "dizi" ? `/${item.season}/${item.episode}` : ""}`}>
-                                                    <Button variant="primary" className="hidden sm:flex" icon={PlayCircle}>
+                                                    <Button variant="primary" className="hidden sm:flex" size="sm" icon={PlayCircle}>
                                                         Devam Et
                                                     </Button>
                                                 </Link>
                                                 <button
                                                     onClick={() => handleRemove(item.tmdbId, item.type)}
-                                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-colors"
-                                                    title="Geçmişten Kaldır"
+                                                    className="w-8 h-8 flex items-center justify-center rounded-lg text-text-sec hover:text-err hover:bg-err/10 transition-colors"
+                                                    title="Gecmisten Kaldir"
                                                 >
-                                                    <X size={18} />
+                                                    <X size={16} />
                                                 </button>
                                             </div>
-                                            <div className="w-full sm:hidden border-t border-border pt-3 mt-1">
+                                            <div className="w-full sm:hidden border-t border-border-dim pt-3 mt-1">
                                                 <Link href={`/izle/${item.type}/${item.tmdbId}${item.type === "dizi" ? `/${item.season}/${item.episode}` : ""}`} className="w-full">
-                                                    <Button variant="secondary" className="w-full justify-center">
-                                                        İzlemeye Devam Et
+                                                    <Button variant="secondary" className="w-full justify-center" size="sm">
+                                                        Izlemeye Devam Et
                                                     </Button>
                                                 </Link>
                                             </div>
@@ -228,14 +213,14 @@ export default function HistoryPage() {
                     })}
 
                     {hasMore && (
-                        <div className="flex justify-center mt-10">
+                        <div className="flex justify-center mt-8">
                             <Button
                                 variant="secondary"
                                 onClick={handleLoadMore}
                                 disabled={loadingMore}
-                                className="w-full md:w-auto min-w-[200px] justify-center text-text-primary hover:bg-bg-hover hover:border-purple/30"
+                                className="w-full md:w-auto min-w-[200px] justify-center"
                             >
-                                {loadingMore ? "Yükleniyor..." : "Daha Fazla Göster"}
+                                {loadingMore ? "Yukleniyor..." : "Daha Fazla Goster"}
                             </Button>
                         </div>
                     )}
@@ -245,22 +230,22 @@ export default function HistoryPage() {
             <Modal
                 isOpen={showClearModal}
                 onClose={() => setShowClearModal(false)}
-                title="Geçmişi Temizle"
+                title="Gecmisi Temizle"
             >
                 <div className="flex flex-col gap-6">
-                    <p className="text-text-secondary leading-relaxed">
-                        Tüm izleme geçmişiniz geri dönülemez şekilde silinecektir. Emin misiniz?
+                    <p className="text-text-sec leading-relaxed">
+                        Tum izleme gecmisiniz geri donulemez sekilde silinecektir. Emin misiniz?
                     </p>
                     <div className="flex justify-end gap-3">
                         <Button variant="secondary" onClick={() => setShowClearModal(false)}>
-                            İptal
+                            Iptal
                         </Button>
-                        <Button variant="primary" className="!bg-error hover:!bg-error/90 !text-white" onClick={handleClearAll} icon={Trash2}>
+                        <Button variant="danger" onClick={handleClearAll} icon={Trash2}>
                             Evet, Temizle
                         </Button>
                     </div>
                 </div>
             </Modal>
-        </div>
+        </motion.div>
     );
 }

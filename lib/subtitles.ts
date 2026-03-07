@@ -97,7 +97,14 @@ export async function getSubtitleDownloadUrl(fileId: number): Promise<string | n
         // Check sessionStorage cache
         const cacheKey = `subtitle_${fileId}`
         const cached = sessionStorage.getItem(cacheKey)
-        if (cached) return cached
+        if (cached) {
+            try {
+                const { url, timestamp } = JSON.parse(cached)
+                if (Date.now() - timestamp < 3 * 60 * 60 * 1000) return url
+            } catch {
+                // Legacy non-JSON cache, ignore
+            }
+        }
 
         const response = await fetch(`${API_BASE}/download`, {
             method: 'POST',
@@ -111,7 +118,7 @@ export async function getSubtitleDownloadUrl(fileId: number): Promise<string | n
         const link = json.link || null
 
         if (link) {
-            sessionStorage.setItem(cacheKey, link)
+            sessionStorage.setItem(cacheKey, JSON.stringify({ url: link, timestamp: Date.now() }))
         }
 
         return link

@@ -8,7 +8,6 @@ import { getWatchlist } from "@/lib/db";
 import { searchMulti, posterUrl } from "@/lib/tmdb";
 import type { TMDBMultiSearchResult } from "@/lib/tmdb";
 import { motion, AnimatePresence } from "framer-motion";
-import Input from "./ui/Input";
 import {
     Home,
     Library,
@@ -25,9 +24,8 @@ import {
     LogIn,
     LogOut
 } from "lucide-react";
-import PWAInstallButton from "./PWAInstallButton";
 import { useUser } from "@/hooks/useUser";
-import Button from "./ui/Button";
+import { cn } from "@/lib/utils";
 
 // --- Nav linkleri ---
 const navLinks = [
@@ -35,10 +33,10 @@ const navLinks = [
     { href: "/koleksiyon", label: "Koleksiyon", icon: Library },
     { href: "/dizilerim", label: "Dizilerim", icon: Tv2 },
     { href: "/kesif", label: "Keşfet", icon: Compass },
-    { href: "/gecmis", label: "Geçmiş", icon: History },
+    { href: "/gecmis", label: "Gecmis", icon: History },
 ];
 
-export default function Navbar() {
+export default function Navbar(): React.ReactElement | null {
     const pathname = usePathname();
     const router = useRouter();
     const { user, loading, signOut } = useUser();
@@ -52,6 +50,7 @@ export default function Navbar() {
     const [watchlistCount, setWatchlistCount] = useState(0);
 
     const searchContainerRef = useRef<HTMLDivElement>(null);
+    const searchButtonRef = useRef<HTMLButtonElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -70,8 +69,8 @@ export default function Navbar() {
 
     useEffect(() => {
         fetchWatchlistCount();
-        const handleStorage = () => fetchWatchlistCount();
-        const handleSupabaseUpdate = () => fetchWatchlistCount();
+        const handleStorage = (): void => { fetchWatchlistCount(); };
+        const handleSupabaseUpdate = (): void => { fetchWatchlistCount(); };
 
         window.addEventListener("storage", handleStorage);
         window.addEventListener("cinetrack_supabase_update", handleSupabaseUpdate);
@@ -98,12 +97,22 @@ export default function Navbar() {
         }
     }, [isSearchOpen]);
 
+    // --- Cleanup debounce timer on unmount ---
+    useEffect(() => {
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, []);
+
     // --- Click outside to close search ---
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
+        const handleClickOutside = (e: MouseEvent): void => {
             if (
                 searchContainerRef.current &&
-                !searchContainerRef.current.contains(e.target as Node)
+                !searchContainerRef.current.contains(e.target as Node) &&
+                (!searchButtonRef.current || !searchButtonRef.current.contains(e.target as Node))
             ) {
                 setIsSearchOpen(false);
                 setSearchQuery("");
@@ -117,7 +126,8 @@ export default function Navbar() {
     }, [isSearchOpen]);
 
     // --- Debounced search ---
-    const handleSearchChange = useCallback((value: string) => {
+    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
         setSearchQuery(value);
         if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
@@ -137,7 +147,7 @@ export default function Navbar() {
         }, 300);
     }, []);
 
-    const isActive = (href: string) => {
+    const isActive = (href: string): boolean => {
         if (!pathname) return false;
         if (href === "/") return pathname === "/";
         return pathname === href || pathname.startsWith(href + "/");
@@ -147,7 +157,7 @@ export default function Navbar() {
     const movieResults = searchResults.filter((r) => r.media_type === "movie");
     const tvResults = searchResults.filter((r) => r.media_type === "tv");
 
-    const handleResultClick = (result: TMDBMultiSearchResult) => {
+    const handleResultClick = (result: TMDBMultiSearchResult): void => {
         const path =
             result.media_type === "movie"
                 ? `/film/${result.id}`
@@ -158,209 +168,214 @@ export default function Navbar() {
         setSearchResults([]);
     };
 
+    // Username initial
+    const username = user?.user_metadata?.username || user?.email?.split('@')[0] || "U";
+    const initial = typeof username === 'string' ? username.charAt(0).toUpperCase() : "U";
+
     if (pathname && pathname.startsWith("/izle/")) return null;
 
     return (
         <nav
-            className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled
-                ? "bg-bg-primary/80 backdrop-blur-xl shadow-lg shadow-black/20"
-                : "bg-bg-primary"
-                }`}
+            className={cn(
+                "sticky top-0 z-50 h-14 border-b border-border-dim transition-all duration-300 backdrop-blur-xl",
+                isScrolled ? "bg-void/[0.96]" : "bg-void/[0.82]"
+            )}
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
-                    {/* ===== SOL: Logo ===== */}
-                    <Link
-                        href="/"
-                        className="flex items-center gap-2 group flex-shrink-0"
-                    >
-                        <Clapperboard
-                            size={22}
-                            className="text-purple-DEFAULT group-hover:text-purple-light transition-colors"
-                        />
-                        <span className="font-display text-[20px] font-bold text-text-primary">
-                            CineTrack
-                        </span>
-                    </Link>
-
-                    {/* ===== ORTA: Desktop nav linkleri ===== */}
-                    <div className="hidden lg:flex items-center gap-1">
-                        {navLinks.map((link) => {
-                            const Icon = link.icon;
-                            const active = isActive(link.href);
-                            return (
-                                <Link
-                                    key={link.href}
-                                    href={link.href}
-                                    className={`relative flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-200 ${active
-                                        ? "text-purple-DEFAULT"
-                                        : "text-text-secondary hover:text-text-primary"
-                                        }`}
-                                >
-                                    <Icon size={16} />
-                                    {link.label}
-                                    {/* Koleksiyon badge */}
-                                    {link.href === "/koleksiyon" && watchlistCount > 0 && (
-                                        <span className="min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white bg-purple-DEFAULT rounded-full shadow-lg shadow-purple-DEFAULT/30">
-                                            {watchlistCount > 99 ? "99+" : watchlistCount}
-                                        </span>
-                                    )}
-                                    {/* Aktif çizgi */}
-                                    {active && (
-                                        <motion.span
-                                            layoutId="navbar-active-indicator"
-                                            className="absolute bottom-0 left-2 right-2 h-[2px] bg-purple-DEFAULT rounded-full"
-                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                        />
-                                    )}
-                                </Link>
-                            );
-                        })}
+            <div className="max-w-[1400px] mx-auto px-16 max-lg:px-6 max-md:px-4 h-full flex items-center justify-between">
+                {/* ===== LEFT: Logo ===== */}
+                <Link
+                    href="/"
+                    className="flex items-center gap-2.5 group flex-shrink-0"
+                >
+                    <div className="w-6 h-6 rounded-md bg-purple-500 flex items-center justify-center">
+                        <Clapperboard size={13} className="text-white" />
                     </div>
+                    <span className="font-display text-[20px] tracking-[3px] text-white">
+                        CINETRACK
+                    </span>
+                </Link>
 
-                    {/* ===== SAĞ: Arama, Profil, Mobil menü ===== */}
-                    <div className="flex items-center gap-2">
-                        {/* Arama butonu */}
-                        <button
-                            onClick={() => setIsSearchOpen(!isSearchOpen)}
-                            className={`p-2 rounded-lg transition-colors duration-200 ${isSearchOpen
-                                ? "text-purple-DEFAULT bg-purple-DEFAULT/10"
-                                : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
-                                }`}
-                            aria-label="Ara"
-                        >
-                            <Search size={20} />
-                        </button>
-
-                        {/* Profil veya Giriş butonu */}
-                        {loading ? (
-                            <div className="w-9 h-9 rounded-full bg-border animate-pulse shrink-0" />
-                        ) : user ? (
-                            <div className="relative group/dropdown">
-                                <button
-                                    className="flex items-center gap-2 p-1.5 rounded-full hover:bg-bg-hover transition-colors"
-                                    aria-label="Profil Menüsü"
-                                >
-                                    <div className="w-8 h-8 rounded-full bg-purple-DEFAULT/20 flex items-center justify-center border border-purple-DEFAULT/30 shrink-0">
-                                        <UserCircle2 size={18} className="text-purple-DEFAULT" />
-                                    </div>
-                                    <span className="text-sm font-medium text-text-primary hidden md:block max-w-[100px] truncate">
-                                        {user.user_metadata?.username || user.email?.split('@')[0] || "User"}
+                {/* ===== CENTER: Desktop nav links ===== */}
+                <div className="hidden lg:flex items-center gap-1">
+                    {navLinks.map((link) => {
+                        const Icon = link.icon;
+                        const active = isActive(link.href);
+                        return (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                className={cn(
+                                    "relative flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium transition-colors duration-150",
+                                    active
+                                        ? "text-text-pri"
+                                        : "text-text-sec hover:text-text-pri"
+                                )}
+                            >
+                                <Icon size={14} />
+                                {link.label}
+                                {/* Koleksiyon badge */}
+                                {link.href === "/koleksiyon" && watchlistCount > 0 && (
+                                    <span className="min-w-[16px] h-4 flex items-center justify-center px-1 text-[10px] font-bold text-white bg-purple-500 rounded-full">
+                                        {watchlistCount > 99 ? "99+" : watchlistCount}
                                     </span>
-                                </button>
-
-                                {/* Dropdown Menu */}
-                                <div className="absolute right-0 top-full mt-2 w-48 bg-bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all origin-top-right z-50 overflow-hidden">
-                                    <Link href="/profil" className="flex items-center gap-2 px-4 py-3 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors">
-                                        <UserCircle2 size={16} /> Profil
-                                    </Link>
-                                    <div className="border-t border-border" />
-                                    <button
-                                        onClick={async () => {
-                                            await signOut();
-                                            router.push("/auth");
-                                        }}
-                                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors text-left"
-                                    >
-                                        <LogOut size={16} /> Çıkış Yap
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <Link href="/auth">
-                                <Button variant="primary" size="sm" icon={LogIn} className="hidden sm:flex rounded-full">
-                                    Giriş Yap
-                                </Button>
-                                <Button variant="primary" size="sm" className="sm:hidden w-9 h-9 rounded-full p-0 flex items-center justify-center">
-                                    <LogIn size={16} className="m-0" />
-                                </Button>
+                                )}
+                                {/* Active indicator */}
+                                {active && (
+                                    <motion.span
+                                        layoutId="navbar-active-indicator"
+                                        className="absolute bottom-[-1px] left-2 right-2 h-[2px] bg-purple-500 rounded-full"
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
                             </Link>
+                        );
+                    })}
+                </div>
+
+                {/* ===== RIGHT: Search, Profile, Mobile menu ===== */}
+                <div className="flex items-center gap-2">
+                    {/* Search button */}
+                    <button
+                        ref={searchButtonRef}
+                        onClick={() => setIsSearchOpen(!isSearchOpen)}
+                        className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                            isSearchOpen
+                                ? "text-purple-400 bg-purple-500/10"
+                                : "bg-subtle border border-border-dim text-text-sec hover:text-text-pri"
                         )}
+                        aria-label="Ara"
+                    >
+                        <Search size={15} />
+                    </button>
 
-                        {/* PWA İndir Butonu */}
-                        <div className="hidden sm:block">
-                            <PWAInstallButton />
+                    {/* Profile or Login */}
+                    {loading ? (
+                        <div className="w-8 h-8 rounded-lg bg-overlay animate-pulse shrink-0" />
+                    ) : user ? (
+                        <div className="relative group/dropdown">
+                            <button
+                                className="w-8 h-8 rounded-lg bg-purple-950 border border-purple-800/60 flex items-center justify-center hover:border-purple-500 transition-colors"
+                                aria-label="Profil"
+                            >
+                                <span className="text-[13px] font-semibold text-purple-300">
+                                    {initial}
+                                </span>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-raised border border-border-mid rounded-xl shadow-[0_16px_48px_rgba(0,0,0,.8)] opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all origin-top-right z-50 overflow-hidden">
+                                <Link href="/profil" className="flex items-center gap-2 px-4 py-3 text-sm text-text-sec hover:text-text-pri hover:bg-overlay transition-colors">
+                                    <UserCircle2 size={16} /> Profil
+                                </Link>
+                                <div className="border-t border-border-dim" />
+                                <button
+                                    onClick={async () => {
+                                        await signOut();
+                                        router.push("/auth");
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-err hover:text-err hover:bg-err/10 transition-colors text-left"
+                                >
+                                    <LogOut size={16} /> Cikis Yap
+                                </button>
+                            </div>
                         </div>
+                    ) : (
+                        <Link href="/auth">
+                            <button className="h-8 px-4 rounded-lg bg-purple-500 text-white text-[13px] font-medium hover:bg-purple-400 transition-colors hidden sm:flex items-center gap-1.5 shadow-glow-sm">
+                                <LogIn size={14} />
+                                Giris Yap
+                            </button>
+                            <button className="sm:hidden w-8 h-8 rounded-lg bg-purple-500 text-white flex items-center justify-center hover:bg-purple-400 transition-colors">
+                                <LogIn size={14} />
+                            </button>
+                        </Link>
+                    )}
 
-                        {/* Mobil hamburger */}
-                        <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="lg:hidden p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
-                            aria-label="Menüyü aç/kapat"
-                        >
-                            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-                        </button>
-                    </div>
+                    {/* Removed PWA Install */}
+
+                    {/* Mobile hamburger */}
+                    <button
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-text-sec hover:text-text-pri hover:bg-overlay transition-colors"
+                        aria-label="Menu"
+                    >
+                        {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                    </button>
                 </div>
             </div>
 
-            {/* ===== AÇILAN ARAMA BARI ===== */}
+            {/* ===== SEARCH BAR ===== */}
             <AnimatePresence>
                 {isSearchOpen && (
                     <motion.div
                         ref={searchContainerRef}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: "easeInOut" }}
-                        className="overflow-hidden border-t border-border"
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute left-0 right-0 top-14 bg-void/95 backdrop-blur-xl border-b border-border-dim z-40"
                     >
-                        <div className="bg-bg-card px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto">
-                            <Input
-                                ref={searchInputRef}
-                                icon={Search}
-                                clearable
-                                value={searchQuery}
-                                onChange={handleSearchChange}
-                                placeholder="Film veya dizi ara..."
-                            />
+                        <div className="max-w-[1400px] mx-auto px-16 max-lg:px-6 max-md:px-4 py-3">
+                            {/* Search input */}
+                            <div className="relative">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={handleSearchChange}
+                                    placeholder="Film veya dizi ara..."
+                                    className="w-full bg-overlay border border-border-dim rounded-xl h-10 pl-10 pr-4 text-[14px] text-white placeholder:text-text-muted focus:border-purple-500 focus:outline-none transition-colors"
+                                />
+                            </div>
 
-                            {/* Sonuçlar dropdown */}
+                            {/* Results dropdown */}
                             {(searchResults.length > 0 || isSearching) && (
-                                <div className="mt-3 max-h-[60vh] overflow-y-auto rounded-xl border border-border bg-bg-card">
+                                <div className="mt-2 max-h-[60vh] overflow-y-auto bg-raised border border-border-dim rounded-xl shadow-[0_16px_48px_rgba(0,0,0,.8)]">
                                     {isSearching && (
-                                        <div className="px-4 py-6 text-center text-text-secondary text-sm">
-                                            Aranıyor...
+                                        <div className="px-4 py-6 text-center text-text-sec text-sm">
+                                            Araniyor...
                                         </div>
                                     )}
 
                                     {!isSearching && searchResults.length === 0 && searchQuery.length >= 2 && (
-                                        <div className="px-4 py-6 text-center text-text-secondary text-sm">
-                                            Sonuç bulunamadı
+                                        <div className="px-4 py-6 text-center text-text-sec text-sm">
+                                            Sonuc bulunamadi
                                         </div>
                                     )}
 
                                     {!isSearching && movieResults.length > 0 && (
                                         <div>
-                                            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                                <Film size={14} />
-                                                Filmler
+                                            <div className="flex items-center gap-2 px-3 py-2 text-[11px] font-semibold text-text-muted uppercase tracking-wider">
+                                                <Film size={12} />
+                                                FILMLER
                                             </div>
                                             {movieResults.map((result) => (
                                                 <button
                                                     key={`movie-${result.id}`}
                                                     onClick={() => handleResultClick(result)}
-                                                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-bg-hover transition-colors text-left"
+                                                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-overlay transition-colors text-left cursor-pointer"
                                                 >
                                                     {result.poster_path ? (
                                                         <Image
                                                             src={posterUrl(result.poster_path)}
                                                             alt={result.title || ""}
-                                                            width={32}
-                                                            height={48}
-                                                            className="rounded object-cover flex-shrink-0"
+                                                            width={40}
+                                                            height={60}
+                                                            className="rounded-md object-cover flex-shrink-0 min-w-[40px] h-[60px]"
                                                         />
                                                     ) : (
-                                                        <div className="w-8 h-12 bg-bg-hover rounded flex items-center justify-center flex-shrink-0">
-                                                            <Film size={14} className="text-text-muted" />
+                                                        <div className="w-10 h-[60px] bg-overlay rounded-md flex items-center justify-center flex-shrink-0 min-w-[40px]">
+                                                            <Film size={14} className="text-text-dim" />
                                                         </div>
                                                     )}
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-text-primary truncate">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-[14px] font-medium text-white truncate">
                                                             {result.title}
                                                         </p>
                                                         {result.release_date && (
-                                                            <p className="text-xs text-text-secondary">
+                                                            <p className="text-[12px] text-text-sec">
                                                                 {result.release_date.slice(0, 4)}
                                                             </p>
                                                         )}
@@ -372,35 +387,35 @@ export default function Navbar() {
 
                                     {!isSearching && tvResults.length > 0 && (
                                         <div>
-                                            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border text-xs font-semibold text-text-muted uppercase tracking-wider">
-                                                <Tv size={14} />
-                                                Diziler
+                                            <div className="flex items-center gap-2 px-3 py-2 text-[11px] font-semibold text-text-muted uppercase tracking-wider">
+                                                <Tv size={12} />
+                                                DIZILER
                                             </div>
                                             {tvResults.map((result) => (
                                                 <button
                                                     key={`tv-${result.id}`}
                                                     onClick={() => handleResultClick(result)}
-                                                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-bg-hover transition-colors text-left"
+                                                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-overlay transition-colors text-left cursor-pointer"
                                                 >
                                                     {result.poster_path ? (
                                                         <Image
                                                             src={posterUrl(result.poster_path)}
                                                             alt={result.name || ""}
-                                                            width={32}
-                                                            height={48}
-                                                            className="rounded object-cover flex-shrink-0"
+                                                            width={40}
+                                                            height={60}
+                                                            className="rounded-md object-cover flex-shrink-0 min-w-[40px] h-[60px]"
                                                         />
                                                     ) : (
-                                                        <div className="w-8 h-12 bg-bg-hover rounded flex items-center justify-center flex-shrink-0">
-                                                            <Tv size={14} className="text-text-muted" />
+                                                        <div className="w-10 h-[60px] bg-overlay rounded-md flex items-center justify-center flex-shrink-0 min-w-[40px]">
+                                                            <Tv size={14} className="text-text-dim" />
                                                         </div>
                                                     )}
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-text-primary truncate">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-[14px] font-medium text-white truncate">
                                                             {result.name}
                                                         </p>
                                                         {result.first_air_date && (
-                                                            <p className="text-xs text-text-secondary">
+                                                            <p className="text-[12px] text-text-sec">
                                                                 {result.first_air_date.slice(0, 4)}
                                                             </p>
                                                         )}
@@ -416,7 +431,7 @@ export default function Navbar() {
                 )}
             </AnimatePresence>
 
-            {/* ===== MOBİL DRAWER ===== */}
+            {/* ===== MOBILE DRAWER ===== */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
                     <>
@@ -430,30 +445,32 @@ export default function Navbar() {
                         />
                         {/* Drawer */}
                         <motion.div
-                            initial={{ x: "100%" }}
+                            initial={{ x: 288 }}
                             animate={{ x: 0 }}
-                            exit={{ x: "100%" }}
+                            exit={{ x: 288 }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 bottom-0 w-3/4 max-w-sm bg-bg-card border-l border-border z-[60] shadow-2xl flex flex-col lg:hidden"
+                            className="fixed top-0 right-0 bottom-0 w-72 bg-raised border-l border-border-mid z-[60] shadow-2xl flex flex-col lg:hidden"
                         >
                             {/* Drawer header */}
-                            <div className="p-5 pb-3 border-b border-border flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Clapperboard size={18} className="text-purple-DEFAULT" />
-                                    <span className="font-display text-lg font-bold text-text-primary">
-                                        CineTrack
+                            <div className="p-6 pb-4 border-b border-border-dim flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-6 h-6 rounded-md bg-purple-500 flex items-center justify-center">
+                                        <Clapperboard size={13} className="text-white" />
+                                    </div>
+                                    <span className="font-display text-[18px] tracking-[2px] text-white">
+                                        CINETRACK
                                     </span>
                                 </div>
                                 <button
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="p-2 rounded-lg bg-bg-hover hover:bg-border transition-colors text-text-secondary"
+                                    className="w-8 h-8 rounded-lg flex items-center justify-center bg-overlay hover:bg-subtle transition-colors text-text-sec"
                                 >
-                                    <X size={18} />
+                                    <X size={16} />
                                 </button>
                             </div>
 
                             {/* Nav links */}
-                            <div className="p-4 flex flex-col gap-1 overflow-y-auto flex-1">
+                            <div className="p-6 flex flex-col gap-1 overflow-y-auto flex-1">
                                 {navLinks.map((link) => {
                                     const Icon = link.icon;
                                     const active = isActive(link.href);
@@ -462,15 +479,17 @@ export default function Navbar() {
                                             key={link.href}
                                             href={link.href}
                                             onClick={() => setIsMobileMenuOpen(false)}
-                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${active
-                                                ? "text-purple-DEFAULT bg-purple-DEFAULT/10"
-                                                : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
-                                                }`}
+                                            className={cn(
+                                                "flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors",
+                                                active
+                                                    ? "text-purple-400 bg-purple-500/10"
+                                                    : "text-text-sec hover:text-text-pri hover:bg-overlay"
+                                            )}
                                         >
                                             <Icon size={18} />
                                             {link.label}
                                             {link.href === "/koleksiyon" && watchlistCount > 0 && (
-                                                <span className="ml-auto text-xs font-bold bg-purple-DEFAULT text-white px-2 py-0.5 rounded-full">
+                                                <span className="ml-auto text-[10px] font-bold bg-purple-500 text-white px-2 py-0.5 rounded-full">
                                                     {watchlistCount}
                                                 </span>
                                             )}
@@ -479,17 +498,19 @@ export default function Navbar() {
                                 })}
 
                                 {/* Extra mobile links */}
-                                <div className="mt-3 pt-3 border-t border-border">
+                                <div className="mt-3 pt-3 border-t border-border-dim">
                                     {!loading && (
                                         user ? (
                                             <>
                                                 <Link
                                                     href="/profil"
                                                     onClick={() => setIsMobileMenuOpen(false)}
-                                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive("/profil")
-                                                        ? "text-purple-DEFAULT bg-purple-DEFAULT/10"
-                                                        : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
-                                                        }`}
+                                                    className={cn(
+                                                        "flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors",
+                                                        isActive("/profil")
+                                                            ? "text-purple-400 bg-purple-500/10"
+                                                            : "text-text-sec hover:text-text-pri hover:bg-overlay"
+                                                    )}
                                                 >
                                                     <UserCircle2 size={18} />
                                                     Profilim
@@ -500,32 +521,31 @@ export default function Navbar() {
                                                         await signOut();
                                                         router.push("/auth");
                                                     }}
-                                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-red-500 hover:bg-red-500/10"
+                                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors text-err hover:bg-err/10"
                                                 >
                                                     <LogOut size={18} />
-                                                    Çıkış Yap
+                                                    Cikis Yap
                                                 </button>
                                             </>
                                         ) : (
                                             <Link
                                                 href="/auth"
                                                 onClick={() => setIsMobileMenuOpen(false)}
-                                                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${isActive("/auth")
-                                                    ? "text-purple-DEFAULT bg-purple-DEFAULT/10"
-                                                    : "text-text-secondary hover:text-text-primary hover:bg-bg-hover"
-                                                    }`}
+                                                className={cn(
+                                                    "flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors",
+                                                    isActive("/auth")
+                                                        ? "text-purple-400 bg-purple-500/10"
+                                                        : "text-text-sec hover:text-text-pri hover:bg-overlay"
+                                                )}
                                             >
                                                 <LogIn size={18} />
-                                                Giriş Yap
+                                                Giris Yap
                                             </Link>
                                         )
                                     )}
                                 </div>
 
-                                {/* Install PWA (Mobile) */}
-                                <div className="mt-2 text-center flex justify-center w-full">
-                                    <PWAInstallButton />
-                                </div>
+                                {/* Removed Install PWA (Mobile) */}
                             </div>
                         </motion.div>
                     </>

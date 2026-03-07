@@ -139,7 +139,8 @@ export async function addToWatched(item: {
     id: string;
     type: "film" | "dizi";
     title: string;
-    posterPath: string;
+    posterPath: string | null;
+    watchedAt?: string;
 }) {
     const supabase = createClient();
     const user = await getAuthUser();
@@ -164,8 +165,11 @@ export async function addToWatched(item: {
     return data;
 }
 
-export async function markAsWatched(item: any) {
-    return addToWatched(item); // Alias for compatibility
+export async function markAsWatched(item: { id: string; type: "film" | "dizi"; title: string; posterPath: string | null; watchedAt?: string }) {
+    return addToWatched({
+        ...item,
+        watchedAt: item.watchedAt || new Date().toISOString(),
+    });
 }
 
 export async function removeFromWatched(id: string, type: "film" | "dizi") {
@@ -592,11 +596,10 @@ export async function getAllProgress(limit?: number, offset?: number): Promise<W
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
-    if (limit) {
+    if (limit !== undefined && offset !== undefined) {
+        query = query.range(offset, offset + limit - 1);
+    } else if (limit !== undefined) {
         query = query.limit(limit);
-    }
-    if (offset) {
-        query = query.range(offset, offset + (limit || 10) - 1);
     }
 
     const { data, error } = await query;
@@ -822,7 +825,8 @@ export async function removeFromCustomList(listId: string, tmdbId: string) {
         .from('custom_list_items')
         .delete()
         .eq('list_id', listId)
-        .eq('tmdb_id', tmdbId);
+        .eq('tmdb_id', tmdbId)
+        .eq('user_id', user.id);
 
     if (error) throw error;
 }
@@ -861,7 +865,7 @@ export async function getUserProfile() {
     return null;
 }
 
-export async function saveUserProfile(profileData: any) {
+export async function saveUserProfile(profileData: Partial<UserProfile> & { username?: string; avatar?: string; avatarEmoji?: string; cinemaIdentity?: string }) {
     const supabase = createClient();
     const user = await getAuthUser();
     if (!user) return;
@@ -878,17 +882,6 @@ export async function saveUserProfile(profileData: any) {
 
     if (error) throw error;
 }
-
-export const STORAGE_KEYS = {
-    WATCHLIST: "cinetrack_watchlist",
-    WATCHED: "cinetrack_watched",
-    NOTES: "cinetrack_notes",
-    LISTS: "cinetrack_lists",
-    PROFILE: "cinetrack_profile",
-    RATINGS: "cinetrack_ratings",
-    EPISODES: "cinetrack_episodes",
-    WATCH_PROGRESS: "cinetrack_watch_progress"
-};
 
 export interface NotificationSettings {
     enabled: boolean;
@@ -925,7 +918,7 @@ export async function saveNotificationSettings(settings: NotificationSettings): 
 
     const timeStr = `${settings.hour.toString().padStart(2, '0')}:${settings.minute.toString().padStart(2, '0')}`;
 
-    await supabase
+    const { error } = await supabase
         .from('profiles')
         .upsert({
             id: user.id,
@@ -933,6 +926,10 @@ export async function saveNotificationSettings(settings: NotificationSettings): 
             notification_time: timeStr,
         });
 
+    if (error) {
+        logger.error('saveNotificationSettings error:', error);
+        throw error;
+    }
 }
 
 

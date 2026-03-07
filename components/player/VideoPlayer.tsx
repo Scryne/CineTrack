@@ -68,32 +68,16 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
         onError()
     }, [onError, activeSourceId])
 
-    // Load timeout — 8 saniye içinde yüklenmezse X-Frame-Options engeli sayılır
     useEffect(() => {
         setIsLoading(true)
         setHasError(false)
         isLoadingRef.current = true
 
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current)
-        }
-
-        timeoutRef.current = setTimeout(() => {
-            if (isLoadingRef.current) {
-                handleError()
-            }
-        }, 8000)
-
+        // Yüklenme durumunu resetle, timeout kullanma (adblocker'lar yüklenmeyi geciktirebilir)
         // Reset subtitle timer when embed URL changes
         timerRef.current = 0
         timerStartRef.current = null
-
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current)
-            }
-        }
-    }, [embedUrl, handleError])
+    }, [embedUrl])
 
     // Fullscreen keyboard shortcut
     useEffect(() => {
@@ -279,7 +263,7 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
     return (
         <div
             ref={containerRef}
-            className="relative w-full aspect-video md:aspect-[16/9] rounded-none sm:rounded-2xl overflow-hidden bg-black flex items-center justify-center group"
+            className="relative w-full aspect-video md:aspect-[16/9] rounded-none sm:rounded-2xl overflow-hidden bg-void flex items-center justify-center group shadow-glow ring-1 ring-border-dim/50"
         >
             {isOffline && (
                 <div className="absolute top-0 left-0 right-0 bg-red-500/90 text-white text-center py-2 text-sm z-50 font-medium tracking-wide">
@@ -345,11 +329,11 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
                         title={title}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                         allowFullScreen={true}
-                        referrerPolicy="no-referrer"
+                        referrerPolicy="origin"
                         loading="lazy"
                         scrolling="no"
                         frameBorder="0"
-                        className="w-full h-full border-none"
+                        className="w-full h-full border-none bg-void"
                         onLoad={handleLoad}
                         onError={handleError}
                     />
