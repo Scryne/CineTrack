@@ -8,24 +8,19 @@ export default function KeyboardShortcuts() {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Aktif element bir input veya textarea ise kısayolları engelle
-            const isInputFocus = ["INPUT", "TEXTAREA"].includes(
-                (document.activeElement as HTMLElement)?.tagName
-            );
+            // Aktif element bir input, textarea veya contenteditable ise kısayolları engelle
+            const activeEl = document.activeElement as HTMLElement;
+            const isInputFocus = ["INPUT", "TEXTAREA", "SELECT"].includes(activeEl?.tagName) || activeEl?.isContentEditable;
+            if (isInputFocus) return;
+
+            // Herhangi bir modal açıksa kısayolları engelle
+            const hasOpenModal = document.querySelector('[role="dialog"]') || document.querySelector('.fixed.inset-0.z-50');
+            if (hasOpenModal) return;
 
             // Arama kısayolu
-            if (e.key === "/" && !isInputFocus) {
+            if (e.key === "/" && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 router.push("/kesif");
-            }
-
-            // Kapatma ve geriye dönme veya ana menüye gitme
-            if (e.key === "Escape" && !isInputFocus) {
-                // Eğer kesif sayfasındaysak ve bir iptal vs. aranıyorsa belki anasayfaya
-                // Bu durumda anasayfaya atalım (Escape = Kapat)
-                if (window.location.pathname === "/kesif") {
-                    router.push("/");
-                }
             }
         };
 

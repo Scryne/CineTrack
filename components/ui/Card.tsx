@@ -1,32 +1,33 @@
-"use client";
-
-import React from "react";
+'use client'
+import { motion } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 interface CardProps {
-    children: React.ReactNode;
-    hover?: boolean;
-    onClick?: () => void;
-    className?: string;
+    children: React.ReactNode
+    hover?: boolean
+    glow?: boolean
+    className?: string
+    onClick?: () => void
 }
 
-export default function Card({
-    children,
-    hover = false,
-    onClick,
-    className = "",
-}: CardProps) {
+export default function Card({ children, hover, glow, className, onClick }: CardProps): React.ReactElement {
     return (
-        <div
+        <motion.div
             onClick={onClick}
-            className={`
-        bg-[#16161A] border border-[#2A2A35] rounded-2xl
-        transition-all duration-200
-        ${hover ? "hover:shadow-card-hover hover:border-[#7B5CF0] cursor-pointer" : ""}
-        ${onClick ? "cursor-pointer" : ""}
-        ${className}
-      `}
+            whileHover={hover ? { y: -3 } : {}}
+            transition={{ duration: 0.15 }}
+            className={cn(
+                'bg-raised border border-border-dim rounded-xl',
+                'shadow-card transition-all duration-200',
+                hover && 'cursor-pointer hover:shadow-card-up hover:border-purple-500/60',
+                glow && 'shadow-glow',
+                onClick && 'cursor-pointer',
+                className,
+            )}
         >
             {children}
-        </div>
-    );
+        </motion.div>
+    )
 }
+
+export { Card }

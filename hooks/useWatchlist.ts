@@ -8,13 +8,13 @@ export function useWatchlist(tmdbId: string, type: 'film' | 'dizi') {
     const [pending, setPending] = useState(false)
 
     useEffect(() => {
+        let cancelled = false
         isInWatchlist(tmdbId, type).then(result => {
-            setInWatchlist(result)
-            setLoading(false)
+            if (!cancelled) { setInWatchlist(result); setLoading(false) }
         }).catch(() => {
-            setInWatchlist(false)
-            setLoading(false)
+            if (!cancelled) { setInWatchlist(false); setLoading(false) }
         })
+        return () => { cancelled = true }
     }, [tmdbId, type])
 
     const toggle = async (item: { title: string; posterPath: string }) => {

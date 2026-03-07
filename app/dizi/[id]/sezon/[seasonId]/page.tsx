@@ -138,7 +138,7 @@ export default function SeasonDetailPage({
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2 size={40} className="animate-spin text-purple" />
+                <Loader2 size={40} className="animate-spin text-purple-500" />
             </div>
         );
     }
@@ -147,8 +147,8 @@ export default function SeasonDetailPage({
     if (!season) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                <h1 className="font-display text-2xl font-bold mb-2 text-text-primary">Sezon Bulunamadı</h1>
-                <p className="text-text-secondary mb-6">Bu sezon bilgilerine ulaşılamıyor.</p>
+                <h1 className="font-display text-2xl font-bold mb-2 text-white">Sezon Bulunamadı</h1>
+                <p className="text-text-sec mb-6">Bu sezon bilgilerine ulaşılamıyor.</p>
                 <Link href={`/dizi/${params.id}`}>
                     <Button variant="primary">Diziye Dön</Button>
                 </Link>
@@ -168,17 +168,17 @@ export default function SeasonDetailPage({
             <section className="mb-10">
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-2 text-sm text-text-muted mb-6">
-                    <Link href={`/dizi/${params.id}`} className="hover:text-text-primary transition-colors">
+                    <Link href={`/dizi/${params.id}`} className="hover:text-white transition-colors">
                         {seriesName || "Dizi"}
                     </Link>
                     <ChevronRight size={14} />
-                    <span className="text-text-primary font-medium">Sezon {seasonNumber}</span>
+                    <span className="text-white font-medium">Sezon {seasonNumber}</span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-6 items-start">
                     {/* Sezon poster */}
                     {season.poster_path && (
-                        <div className="relative w-[150px] h-[225px] flex-shrink-0 rounded-xl overflow-hidden border border-border shadow-purple-glow">
+                        <div className="relative w-[150px] h-[225px] flex-shrink-0 rounded-xl overflow-hidden border border-border-dim shadow-glow-sm">
                             <Image
                                 src={posterUrl(season.poster_path)}
                                 alt={season.name}
@@ -194,7 +194,7 @@ export default function SeasonDetailPage({
 
                     <div className="flex-1 space-y-4">
                         <div>
-                            <h1 className="font-display text-3xl sm:text-4xl font-bold text-text-primary">
+                            <h1 className="font-display text-3xl sm:text-4xl font-bold text-white">
                                 {season.name}
                             </h1>
                             <p className="text-text-muted mt-1">
@@ -204,7 +204,7 @@ export default function SeasonDetailPage({
                         </div>
 
                         {season.overview && (
-                            <p className="text-text-secondary text-sm leading-relaxed max-w-2xl">{season.overview}</p>
+                            <p className="text-text-sec text-sm leading-relaxed max-w-2xl">{season.overview}</p>
                         )}
 
                         {/* Progress */}
@@ -214,7 +214,7 @@ export default function SeasonDetailPage({
                                 color="success"
                                 size="md"
                             />
-                            <p className="text-text-secondary text-sm mt-2">{watchedCount} / {totalEps} bölüm izlendi</p>
+                            <p className="text-text-sec text-sm mt-2">{watchedCount} / {totalEps} bölüm izlendi</p>
                         </div>
 
                         {/* Butonlar */}
@@ -242,7 +242,7 @@ export default function SeasonDetailPage({
           BÖLÜM LİSTESİ
          ========================================== */}
             <section>
-                <h2 className="font-display text-xl font-bold text-text-primary mb-4">Bölümler</h2>
+                <h2 className="font-display text-xl font-bold text-white mb-4">Bölümler</h2>
                 <div className="space-y-3">
                     {season.episodes.map((ep: TMDBEpisode, index: number) => {
                         const key = `${ep.season_number}-${ep.episode_number}`;
@@ -264,7 +264,7 @@ export default function SeasonDetailPage({
                                 >
                                     <div className="flex gap-4 p-4">
                                         {/* Sol: Görsel */}
-                                        <div className="relative w-[160px] h-[90px] flex-shrink-0 rounded-xl overflow-hidden bg-bg-card hidden sm:block">
+                                        <div className="relative w-[160px] h-[90px] flex-shrink-0 rounded-xl overflow-hidden bg-raised hidden sm:block">
                                             {ep.still_path ? (
                                                 <Image
                                                     src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
@@ -289,7 +289,7 @@ export default function SeasonDetailPage({
                                                 <Badge variant="muted" className="text-[10px] flex-shrink-0">
                                                     S{ep.season_number}E{ep.episode_number}
                                                 </Badge>
-                                                <h3 className="font-display font-bold text-text-primary text-sm sm:text-base leading-tight line-clamp-1">
+                                                <h3 className="font-display font-bold text-white text-sm sm:text-base leading-tight line-clamp-1">
                                                     {ep.name}
                                                 </h3>
                                             </div>
@@ -323,13 +323,13 @@ export default function SeasonDetailPage({
 
                                             {ep.overview && (
                                                 <>
-                                                    <p className={`text-xs text-text-secondary leading-relaxed ${isExpanded ? "" : "line-clamp-2"}`}>
+                                                    <p className={`text-xs text-text-sec leading-relaxed ${isExpanded ? "" : "line-clamp-2"}`}>
                                                         {ep.overview}
                                                     </p>
                                                     {ep.overview.length > 120 && (
                                                         <button
                                                             onClick={() => setExpandedEp(isExpanded ? null : ep.id)}
-                                                            className="text-xs text-purple hover:text-purple-light mt-0.5 font-medium"
+                                                            className="text-xs text-purple-500 hover:text-purple-400 mt-0.5 font-medium"
                                                         >
                                                             {isExpanded ? "Gizle" : "Devamını Oku"}
                                                         </button>
@@ -345,7 +345,7 @@ export default function SeasonDetailPage({
                                                     whileTap={{ scale: 0.85 }}
                                                     whileHover={{ scale: 1.1 }}
                                                     title="Bölümü İzle"
-                                                    className="w-10 h-10 rounded-full flex items-center justify-center bg-purple/10 text-purple hover:bg-purple hover:text-white transition-colors"
+                                                    className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-500/10 text-purple-500 hover:bg-purple-500 hover:text-white transition-colors"
                                                 >
                                                     <PlayCircle size={24} />
                                                 </motion.button>

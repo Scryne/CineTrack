@@ -1,38 +1,36 @@
-"use client";
+import { cn } from '@/lib/utils'
 
-import React from "react";
+type BadgeVariant = 'default' | 'purple' | 'success' | 'warning' | 'muted' | 'ghost'
 
-type BadgeVariant = "default" | "purple" | "success" | "warning" | "muted";
-
-interface BadgeProps {
-    children: React.ReactNode;
-    variant?: BadgeVariant;
-    className?: string;
+const badgeVariants: Record<BadgeVariant, string> = {
+    default: 'bg-subtle   border border-border-mid  text-text-sec',
+    purple: 'bg-purple-950 border border-purple-800  text-purple-300',
+    success: 'bg-ok/10    border border-ok/20       text-ok',
+    warning: 'bg-warn/10  border border-warn/20     text-warn',
+    muted: 'bg-overlay  border border-border-dim  text-text-muted',
+    ghost: 'bg-white/[0.08]  border border-white/10    text-white/80',
 }
 
-const variantStyles: Record<BadgeVariant, string> = {
-    default: "bg-[#2A2A35] text-[#F0F0F5]",
-    purple: "bg-[#7B5CF0]/15 text-[#9D7FF4]",
-    success: "bg-[#22C55E]/15 text-[#22C55E]",
-    warning: "bg-[#F59E0B]/15 text-[#F59E0B]",
-    muted: "bg-[#1E1E24] text-[#8B8B99]",
-};
+interface BadgeProps {
+    children: React.ReactNode
+    variant?: BadgeVariant
+    className?: string
+}
 
 export default function Badge({
     children,
-    variant = "default",
-    className = "",
-}: BadgeProps) {
+    variant = 'default',
+    className,
+}: BadgeProps): React.ReactElement {
     return (
-        <span
-            className={`
-        inline-flex items-center px-2.5 py-0.5 rounded-full
-        text-xs font-medium
-        ${variantStyles[variant]}
-        ${className}
-      `}
-        >
+        <span className={cn(
+            'inline-flex items-center gap-1 px-2.5 py-0.5',
+            'text-[11px] font-medium rounded-full leading-none',
+            badgeVariants[variant], className,
+        )}>
             {children}
         </span>
-    );
+    )
 }
+
+export { Badge }

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { Clapperboard, AlertCircle, Mail, Lock, User } from "lucide-react";
 import Input from "@/components/ui/Input";
@@ -210,9 +209,22 @@ export default function AuthPage() {
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-medium text-text-secondary">Şifre</label>
                                 {mode === "login" && (
-                                    <Link href="#" className="text-xs text-purple-DEFAULT hover:underline">
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (!email) { setError("Lütfen önce e-posta adresinizi girin."); return; }
+                                            setLoading(true);
+                                            const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+                                                redirectTo: `${window.location.origin}/auth`,
+                                            });
+                                            setLoading(false);
+                                            if (resetError) { setError(resetError.message); }
+                                            else { setError("Şifre sıfırlama bağlantısı e-posta adresinize gönderildi."); }
+                                        }}
+                                        className="text-xs text-purple-DEFAULT hover:underline"
+                                    >
                                         Şifremi Unuttum
-                                    </Link>
+                                    </button>
                                 )}
                             </div>
                             <Input

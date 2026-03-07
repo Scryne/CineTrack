@@ -38,27 +38,29 @@ export function getCinemaPersonality(stats: CinemaPersonalityStats): CinemaPerso
         return { label: "Cesur Kaşif", description: "Her şeyi deniyorsun, iyi kötü demeden!" };
     }
 
-    if (topGenres[0] === "Aksiyon" || topGenres[0] === "Macera") {
+    const topGenre = topGenres.length > 0 ? topGenres[0] : null;
+
+    if (topGenre === "Aksiyon" || topGenre === "Macera") {
         return { label: "Aksiyon Tutkunu", description: "Adrenalin senin işin!" };
     }
 
-    if (topGenres[0] === "Korku" || topGenres[0] === "Gerilim") {
+    if (topGenre === "Korku" || topGenre === "Gerilim") {
         return { label: "Karanlık Ruh", description: "Gerilim ve korku senin alanın." };
     }
 
-    if (topGenres[0] === "Komedi") {
+    if (topGenre === "Komedi") {
         return { label: "Gülme Uzmanı", description: "Hayat kısa, gülelim bari!" };
     }
 
-    if (topGenres[0] === "Dram") {
+    if (topGenre === "Dram") {
         return { label: "Duygusal Sinefil", description: "Derin hikayelere bayılıyorsun." };
     }
 
-    if (topGenres[0] === "Bilim Kurgu" || topGenres[0] === "Fantastik") {
+    if (topGenre === "Bilim Kurgu" || topGenre === "Fantastik") {
         return { label: "Hayal Gezgini", description: "Gerçekliğin sınırlarını zorluyorsun!" };
     }
 
-    if (topGenres[0] === "Belgesel") {
+    if (topGenre === "Belgesel") {
         return { label: "Bilgi Avcısı", description: "Öğrenmeyi seviyorsun." };
     }
 

@@ -9,7 +9,7 @@ import { ChevronLeft, ExternalLink, PlayCircle, Bookmark, Check, Star, Loader2 }
 
 import toast from 'react-hot-toast'
 
-import { getMovieDetail, posterUrl, profileUrl, BLUR_PLACEHOLDER } from '@/lib/tmdb'
+import { getMovieDetail, posterUrl, backdropUrl, profileUrl, BLUR_PLACEHOLDER } from '@/lib/tmdb'
 import SOURCES, { getMovieEmbedUrl, isSourceBlocked } from '@/lib/sources'
 import { searchSubtitles, getSubtitleDownloadUrl, loadSubtitleAsBlob } from '@/lib/subtitles'
 import {
@@ -25,8 +25,10 @@ import {
 import type { TMDBMovieDetail, TMDBCastMember } from '@/lib/tmdb'
 import type { SubtitleResult } from '@/types/player'
 import dynamic from 'next/dynamic'
+import { FastAverageColor } from 'fast-average-color'
+import { motion } from 'framer-motion'
 
-const VideoPlayer = dynamic(() => import('@/components/player/VideoPlayer'), { ssr: false, loading: () => <div className="w-full aspect-video md:aspect-[16/9] flex items-center justify-center bg-black"><Loader2 className="w-10 h-10 animate-spin text-purple" /></div> })
+const VideoPlayer = dynamic(() => import('@/components/player/VideoPlayer'), { ssr: false, loading: () => <div className="w-full aspect-video md:aspect-[16/9] flex items-center justify-center bg-black"><Loader2 className="w-10 h-10 animate-spin text-purple-500" /></div> })
 import PlayerControls from '@/components/player/PlayerControls'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
@@ -39,6 +41,19 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
     const [movie, setMovie] = useState<TMDBMovieDetail | null>(null)
     const [loading, setLoading] = useState(true)
     const [fetchTimeout, setFetchTimeout] = useState(false)
+    const [dominantColor, setDominantColor] = useState<{ r: number, g: number, b: number } | null>(null)
+
+    useEffect(() => {
+        if (movie?.backdrop_path) {
+            const fac = new FastAverageColor();
+            fac.getColorAsync(backdropUrl(movie.backdrop_path))
+                .then(color => {
+                    const [r, g, b] = color.value;
+                    setDominantColor({ r, g, b });
+                })
+                .catch(e => logger.error("Fetch cover average color failed", e));
+        }
+    }, [movie?.backdrop_path]);
 
     useEffect(() => {
         if (loading) {
@@ -257,19 +272,19 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
 
     if (loading && !fetchTimeout) {
         return (
-            <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col pb-20 animate-pulse">
-                <header className="sticky top-0 z-50 w-full bg-bg-primary/80 border-b border-border h-16 flex items-center px-4 sm:px-6">
-                    <div className="w-8 h-8 rounded-full bg-bg-card" />
-                    <div className="w-48 h-5 ml-4 bg-bg-card rounded" />
+            <div className="min-h-screen bg-bg-primary text-white flex flex-col pb-20 animate-pulse">
+                <header className="sticky top-0 z-50 w-full bg-bg-primary/80 border-b border-border-dim h-16 flex items-center px-4 sm:px-6">
+                    <div className="w-8 h-8 rounded-full bg-raised" />
+                    <div className="w-48 h-5 ml-4 bg-raised rounded" />
                 </header>
-                <section className="w-full bg-black border-b border-border">
-                    <div className="w-full max-w-[1400px] mx-auto aspect-video md:aspect-[16/9] bg-bg-card/30" />
+                <section className="w-full bg-black border-b border-border-dim">
+                    <div className="w-full max-w-[1400px] mx-auto aspect-video md:aspect-[16/9] bg-raised/30" />
                 </section>
                 <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-8">
                     <div className="w-2/3 flex flex-col gap-4">
-                        <div className="w-3/4 h-8 bg-bg-card rounded" />
-                        <div className="w-1/2 h-4 bg-bg-card rounded" />
-                        <div className="w-full h-32 bg-bg-card rounded mt-4" />
+                        <div className="w-3/4 h-8 bg-raised rounded" />
+                        <div className="w-1/2 h-4 bg-raised rounded" />
+                        <div className="w-full h-32 bg-raised rounded mt-4" />
                     </div>
                 </section>
             </div>
@@ -278,9 +293,9 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
 
     if (!movie || fetchTimeout) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-text-primary bg-bg-primary">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-white bg-bg-primary">
                 <h1 className="text-2xl font-bold font-display">{fetchTimeout ? "Sunucu yanıt vermiyor." : "Film bulunamadı."}</h1>
-                <p className="text-text-secondary">Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.</p>
+                <p className="text-text-sec">Lütfen internet bağlantınızı kontrol edip sayfayı yenileyin.</p>
                 <Link href="/">
                     <Button variant="primary">Ana Sayfaya Dön</Button>
                 </Link>
@@ -293,12 +308,24 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
     const activeSource = SOURCES[sourceIndex]
 
     return (
-        <div className="min-h-screen bg-bg-primary text-text-primary flex flex-col pb-20">
+        <div className="min-h-screen bg-bg-primary text-white flex flex-col pb-20 relative">
+            {dominantColor && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1.5 }}
+                    className="absolute inset-0 pointer-events-none mix-blend-screen z-0"
+                    style={{
+                        background: `radial-gradient(circle at 50% 15%, rgba(${dominantColor.r}, ${dominantColor.g}, ${dominantColor.b}, 0.25) 0%, transparent 50%)`
+                    }}
+                />
+            )}
+
             {/* 1. MİNİMAL ÜST BAR */}
-            <header className="sticky top-0 z-50 w-full bg-bg-primary/80 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6">
+            <header className="relative z-50 w-full bg-transparent bg-gradient-to-b from-black/80 to-transparent h-20 flex items-center justify-between px-4 sm:px-6">
                 <Link
                     href={`/film/${params.id}`}
-                    className="flex items-center gap-3 text-text-secondary hover:text-text-primary transition-colors group max-w-[70%]"
+                    className="flex items-center gap-3 text-text-sec hover:text-white transition-colors group max-w-[70%]"
                 >
                     <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors">
                         <ChevronLeft size={20} />
@@ -307,7 +334,7 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                 </Link>
                 <Link
                     href={`/film/${params.id}`}
-                    className="flex items-center gap-2 text-sm font-medium text-purple hover:text-purple-light transition-colors"
+                    className="flex items-center gap-2 text-sm font-medium text-purple-500 hover:text-purple-500-light transition-colors"
                 >
                     <span className="hidden sm:inline">Detay Sayfası</span>
                     <ExternalLink size={16} />
@@ -315,8 +342,8 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
             </header>
 
             {/* 2. VIDEO PLAYER ALANI */}
-            <section className="w-full bg-black flex justify-center border-b border-border">
-                <div className="w-full max-w-[1400px]">
+            <section className="relative w-full flex justify-center px-0 sm:px-6 lg:px-8 mt-2 z-10">
+                <div className="w-full max-w-7xl">
                     <VideoPlayer
                         embedUrl={embedUrl}
                         title={movie.title}
@@ -332,8 +359,8 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
             </section>
 
             {/* 3. PLAYER CONTROLS */}
-            <section className="w-full flex justify-center bg-bg-card border-b border-border">
-                <div className="w-full max-w-[1400px]">
+            <section className="relative w-full flex justify-center z-10">
+                <div className="w-full max-w-7xl px-0 sm:px-6 lg:px-8">
                     <PlayerControls
                         sources={SOURCES}
                         activeSourceIndex={sourceIndex}
@@ -357,12 +384,12 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                     {/* SOL KOLON (2/3) */}
                     <div className="flex-1 lg:w-2/3 flex flex-col gap-6">
                         <div>
-                            <h1 className="font-display text-[28px] font-bold text-text-primary mb-3 leading-tight">
+                            <h1 className="font-display text-[28px] font-bold text-white mb-3 leading-tight">
                                 {movie.title}
                             </h1>
                             <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Badge variant="default" className="text-xs bg-bg-card">{year}</Badge>
-                                <Badge variant="default" className="text-xs bg-bg-card">{formatRuntime(movie.runtime)}</Badge>
+                                <Badge variant="default" className="text-xs bg-raised">{year}</Badge>
+                                <Badge variant="default" className="text-xs bg-raised">{formatRuntime(movie.runtime)}</Badge>
                                 {movie.genres.slice(0, 3).map(g => (
                                     <Badge key={g.id} variant="purple" className="text-xs">{g.name}</Badge>
                                 ))}
@@ -370,14 +397,14 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                         </div>
 
                         {movie.overview && (
-                            <p className="text-text-secondary text-base leading-relaxed">
+                            <p className="text-text-sec text-base leading-relaxed">
                                 {movie.overview}
                             </p>
                         )}
 
                         {/* Oyuncu Kadrosu */}
                         {movie.credits?.cast && movie.credits.cast.length > 0 && (
-                            <div className="pt-4 border-t border-border">
+                            <div className="pt-4 border-t border-border-dim">
                                 <h3 className="font-medium text-lg mb-4">Oyuncular</h3>
                                 <ScrollableRow innerClassName="flex gap-4">
                                     {movie.credits.cast.slice(0, 15).map((actor: TMDBCastMember) => (
@@ -392,14 +419,14 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                     <div className="w-full lg:w-1/3 flex flex-col gap-6">
 
                         {/* Şu An İzliyorsun Kartı */}
-                        <Card className="border-purple/50 shadow-purple-glow p-5 flex flex-col gap-4">
+                        <Card className="border-purple-500/50 shadow-glow-sm p-5 flex flex-col gap-4">
                             <div className="flex items-start gap-4">
-                                <div className="p-3 bg-purple/10 rounded-xl text-purple">
+                                <div className="p-3 bg-purple-500/10 rounded-xl text-purple-500">
                                     <PlayCircle size={28} />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-text-secondary font-medium uppercase tracking-wider mb-1">Şu An İzliyorsun</p>
-                                    <h3 className="font-display font-bold text-text-primary leading-tight line-clamp-2">{movie.title}</h3>
+                                    <p className="text-xs text-text-sec font-medium uppercase tracking-wider mb-1">Şu An İzliyorsun</p>
+                                    <h3 className="font-display font-bold text-white leading-tight line-clamp-2">{movie.title}</h3>
                                     <p className="text-sm text-text-muted mt-1">{activeSource.name}</p>
                                 </div>
                             </div>
@@ -409,7 +436,7 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                         <div className="flex flex-col gap-3">
                             <Button
                                 variant="secondary"
-                                className={`w-full justify-start ${inWatchlist ? '!border-purple !text-purple bg-purple/5' : ''}`}
+                                className={`w-full justify-start ${inWatchlist ? '!border-purple-500 !text-purple-500 bg-purple-500/5' : ''}`}
                                 icon={Bookmark}
                                 onClick={handleWatchlist}
                             >
@@ -427,14 +454,14 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                             <div className="relative">
                                 <Button
                                     variant="secondary"
-                                    className="w-full justify-start text-rating border-border hover:border-rating/50 hover:bg-rating/5"
+                                    className="w-full justify-start text-rating border-border-dim hover:border-rating/50 hover:bg-rating/5"
                                     icon={Star}
                                     onClick={() => setShowRating(!showRating)}
                                 >
                                     Puan Ver
                                 </Button>
                                 {showRating && (
-                                    <div className="absolute top-full mt-2 right-0 z-20 w-full sm:w-auto p-3 bg-bg-card border border-border rounded-xl shadow-xl">
+                                    <div className="absolute top-full mt-2 right-0 z-20 w-full sm:w-auto p-3 bg-raised border border-border-dim rounded-xl shadow-xl">
                                         <RatingPicker
                                             id={params.id}
                                             type="film"
@@ -454,7 +481,7 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                                 <div className="grid grid-cols-2 gap-3">
                                     {movie.similar.results.slice(0, 4).map((m) => (
                                         <Link key={m.id} href={`/film/${m.id}`}>
-                                            <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-bg-card border border-border group hover:border-purple transition-colors">
+                                            <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-raised border border-border-dim group hover:border-purple-500 transition-colors">
                                                 {m.poster_path ? (
                                                     <Image
                                                         src={posterUrl(m.poster_path)}
@@ -488,7 +515,7 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                 title="Kaldığın Yerden Devam Et"
             >
                 <div className="flex flex-col gap-6">
-                    <p className="text-text-secondary leading-relaxed">
+                    <p className="text-text-sec leading-relaxed">
                         Bu filmi daha önce izlemeye başlamışsınız. Kaldığınız yerden devam edebilir veya baştan başlayabilirsiniz.
                     </p>
                     <div className="flex gap-3 justify-end">
@@ -523,7 +550,7 @@ function ActorCard({ actor }: { actor: TMDBCastMember }) {
 
     return (
         <Link href={`/oyuncu/${actor.id}`} className="group w-[80px] flex-shrink-0">
-            <div className="relative w-[80px] h-[80px] rounded-full overflow-hidden bg-bg-card border-2 border-border group-hover:border-purple transition-colors mb-2">
+            <div className="relative w-[80px] h-[80px] rounded-full overflow-hidden bg-raised border-2 border-border-dim group-hover:border-purple-500 transition-colors mb-2">
                 {actor.profile_path && !imgError ? (
                     <Image
                         src={profileUrl(actor.profile_path)}
@@ -541,7 +568,7 @@ function ActorCard({ actor }: { actor: TMDBCastMember }) {
                     </div>
                 )}
             </div>
-            <p className="text-xs font-medium text-text-primary text-center truncate group-hover:text-purple transition-colors">
+            <p className="text-xs font-medium text-white text-center truncate group-hover:text-purple-500 transition-colors">
                 {actor.name}
             </p>
         </Link>

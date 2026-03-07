@@ -14,6 +14,8 @@
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.98.0",
     "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "fast-average-color": "^9.5.0",
     "framer-motion": "^12.34.3",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.575.0",
@@ -21,7 +23,8 @@
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.6.0",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",

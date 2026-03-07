@@ -43,7 +43,11 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
             document.body.style.overflow = "hidden";
         } else {
             document.body.style.overflow = "unset";
-            setTimeout(() => setCurrentStep(0), 300);
+            const timer = setTimeout(() => setCurrentStep(0), 300);
+            return () => {
+                document.body.style.overflow = "unset";
+                clearTimeout(timer);
+            };
         }
         return () => {
             document.body.style.overflow = "unset";

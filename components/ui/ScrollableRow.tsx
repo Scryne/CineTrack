@@ -46,14 +46,19 @@ export default function ScrollableRow({
 
     return (
         <div className={`relative group/row ${className}`}>
+            {/* Sol fade gradient */}
+            {showLeft && (
+                <div className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-void to-transparent z-10 pointer-events-none" />
+            )}
+
             {/* Sol Buton */}
             {showLeft && (
                 <button
                     onClick={(e) => { e.preventDefault(); scroll("left"); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 -mt-2 z-20 bg-black/80 hover:bg-purple hover:scale-110 text-white w-10 h-10 flex items-center justify-center rounded-full opacity-0 group-hover/row:opacity-100 transition-all backdrop-blur-md border border-white/20 shadow-2xl"
+                    className="absolute left-1 top-1/2 -translate-y-1/2 -mt-2 z-20 bg-overlay/90 hover:bg-purple-500 hover:scale-110 text-white w-10 h-10 flex items-center justify-center rounded-full opacity-0 group-hover/row:opacity-100 transition-all duration-200 backdrop-blur-md border border-white/10 shadow-md"
                     aria-label="Sola Kaydır"
                 >
-                    <ChevronLeft size={24} />
+                    <ChevronLeft size={22} />
                 </button>
             )}
 
@@ -67,14 +72,19 @@ export default function ScrollableRow({
                 {children}
             </div>
 
+            {/* Sag fade gradient */}
+            {showRight && (
+                <div className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-void to-transparent z-10 pointer-events-none" />
+            )}
+
             {/* Sag Buton */}
             {showRight && (
                 <button
                     onClick={(e) => { e.preventDefault(); scroll("right"); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 -mt-2 z-20 bg-black/80 hover:bg-purple hover:scale-110 text-white w-10 h-10 flex items-center justify-center rounded-full opacity-0 group-hover/row:opacity-100 transition-all backdrop-blur-md border border-white/20 shadow-2xl"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 -mt-2 z-20 bg-overlay/90 hover:bg-purple-500 hover:scale-110 text-white w-10 h-10 flex items-center justify-center rounded-full opacity-0 group-hover/row:opacity-100 transition-all duration-200 backdrop-blur-md border border-white/10 shadow-md"
                     aria-label="Sağa Kaydır"
                 >
-                    <ChevronRight size={24} />
+                    <ChevronRight size={22} />
                 </button>
             )}
         </div>

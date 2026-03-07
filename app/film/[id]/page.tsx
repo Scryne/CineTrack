@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { FastAverageColor } from "fast-average-color";
 import {
     Star,
     Bookmark,
@@ -49,6 +50,7 @@ export default function FilmDetailPage({
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState<WatchProgress | null>(null);
     const [providers, setProviders] = useState<TMDBWatchProviders | null>(null);
+    const [dominantColor, setDominantColor] = useState<{ r: number, g: number, b: number } | null>(null);
 
     const { inWatchlist, loading: watchlistLoading, toggle: toggleWatchlist } = useWatchlist(params.id, "film");
     const { watched, loading: watchedLoading, toggle: toggleWatched } = useWatched(params.id, "film");
@@ -63,6 +65,25 @@ export default function FilmDetailPage({
 
                 if (movieData) {
                     document.title = `${movieData.title} - CineTrack`;
+
+                    if (movieData.poster_path) {
+                        try {
+                            const fac = new FastAverageColor();
+                            const img = new globalThis.Image();
+                            img.crossOrigin = 'Anonymous';
+                            img.src = posterUrl(movieData.poster_path);
+                            img.onload = () => {
+                                try {
+                                    const color = fac.getColor(img);
+                                    setDominantColor({ r: color.value[0], g: color.value[1], b: color.value[2] });
+                                } catch (e) {
+                                    console.error("Color extraction error", e);
+                                }
+                            };
+                        } catch (e) {
+                            console.error("FAC init error", e);
+                        }
+                    }
                 }
 
                 if (movieData?.imdb_id) {
@@ -115,7 +136,7 @@ export default function FilmDetailPage({
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2 size={40} className="animate-spin text-purple" />
+                <Loader2 size={40} className="animate-spin text-purple-500" />
             </div>
         );
     }
@@ -124,8 +145,8 @@ export default function FilmDetailPage({
     if (!movie) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                <h1 className="font-display text-2xl font-bold mb-2 text-text-primary">Film Bulunamadı</h1>
-                <p className="text-text-secondary mb-6">Bu film bilgilerine ulaşılamıyor.</p>
+                <h1 className="font-display text-2xl font-bold mb-2 text-white">Film Bulunamadı</h1>
+                <p className="text-text-sec mb-6">Bu film bilgilerine ulaşılamıyor.</p>
                 <Link href="/">
                     <Button variant="primary">Ana Sayfaya Dön</Button>
                 </Link>
@@ -187,12 +208,25 @@ export default function FilmDetailPage({
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                 ) : (
-                    <div className="w-full h-full bg-bg-card" />
+                    <div className="w-full h-full bg-raised" />
                 )}
                 {/* Multi-layer gradients */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/60 to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#0D0D0F]/80 via-transparent to-transparent" />
                 <div className="absolute inset-0 bg-black/40" />
+
+                {/* Dynamic dominant color radial gradient for premium look */}
+                {dominantColor && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 1.5 }}
+                        className="absolute inset-0 pointer-events-none mix-blend-screen"
+                        style={{
+                            background: `radial-gradient(circle at 70% 30%, rgba(${dominantColor.r}, ${dominantColor.g}, ${dominantColor.b}, 0.35) 0%, transparent 60%)`
+                        }}
+                    />
+                )}
             </section>
 
             {/* ==========================================
@@ -208,7 +242,7 @@ export default function FilmDetailPage({
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
                         >
-                            <div className="relative w-[220px] h-[330px] rounded-2xl overflow-hidden shadow-purple-glow">
+                            <div className="relative w-[220px] h-[330px] rounded-2xl overflow-hidden shadow-glow-sm">
                                 {movie.poster_path ? (
                                     <Image
                                         src={posterUrl(movie.poster_path)}
@@ -221,7 +255,7 @@ export default function FilmDetailPage({
                                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                     />
                                 ) : (
-                                    <div className="w-full h-full bg-bg-card flex items-center justify-center text-text-muted">
+                                    <div className="w-full h-full bg-raised flex items-center justify-center text-text-muted">
                                         Görsel Yok
                                     </div>
                                 )}
@@ -244,22 +278,22 @@ export default function FilmDetailPage({
                             transition={{ duration: 0.5, delay: 0.1 }}
                         >
                             {/* Film adı */}
-                            <h1 className="font-display text-[32px] sm:text-[40px] font-bold text-text-primary leading-tight">
+                            <h1 className="font-display text-[32px] sm:text-[40px] font-bold text-white leading-tight">
                                 {movie.title}
                             </h1>
 
                             {/* Orijinal ad */}
                             {movie.original_title !== movie.title && (
-                                <p className="text-text-secondary text-base -mt-2">
+                                <p className="text-text-sec text-base -mt-2">
                                     {movie.original_title}
                                 </p>
                             )}
 
                             {/* Meta bilgiler */}
                             <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <span className="text-text-primary font-medium">{year}</span>
+                                <span className="text-white font-medium">{year}</span>
                                 <span className="w-1 h-1 bg-text-muted rounded-full" />
-                                <span className="text-text-secondary">{formatRuntime(movie.runtime)}</span>
+                                <span className="text-text-sec">{formatRuntime(movie.runtime)}</span>
                                 <span className="w-1 h-1 bg-text-muted rounded-full" />
                                 <div className="flex flex-wrap gap-1.5">
                                     {movie.genres.map((g) => (
@@ -278,14 +312,14 @@ export default function FilmDetailPage({
                                         return (
                                             <div
                                                 key={card.source}
-                                                className="flex items-center gap-2.5 bg-bg-card border border-border rounded-xl px-4 py-3 min-w-[120px]"
+                                                className="flex items-center gap-2.5 bg-raised border border-border-dim rounded-xl px-4 py-3 min-w-[120px]"
                                             >
                                                 <Icon size={18} className={card.color} />
                                                 <div>
                                                     <p className="text-text-muted text-[11px] uppercase tracking-wide leading-none mb-0.5">
                                                         {card.source}
                                                     </p>
-                                                    <p className="text-text-primary font-bold text-lg leading-none">
+                                                    <p className="text-white font-bold text-lg leading-none">
                                                         {card.value}
                                                     </p>
                                                 </div>
@@ -297,7 +331,7 @@ export default function FilmDetailPage({
 
                             {/* Benim Puanım */}
                             <div className="flex items-center gap-4">
-                                <span className="text-text-secondary text-sm">Benim Puanım:</span>
+                                <span className="text-text-sec text-sm">Benim Puanım:</span>
                                 <RatingPicker
                                     id={params.id}
                                     type="film"
@@ -313,7 +347,7 @@ export default function FilmDetailPage({
                                 <motion.div whileTap={{ scale: 0.9 }}>
                                     <button
                                         onClick={() => router.push(`/izle/film/${params.id}`)}
-                                        className="flex items-center gap-3 px-6 py-3.5 bg-purple hover:bg-purple-light text-white font-bold rounded-xl transition-all duration-200 shadow-lg shadow-purple/25 hover:shadow-purple/40 group"
+                                        className="flex items-center gap-3 px-6 py-3.5 bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 group"
                                     >
                                         {progress ? (
                                             <>
@@ -336,13 +370,13 @@ export default function FilmDetailPage({
 
                                 <motion.div whileTap={{ scale: 0.9 }}>
                                     {watchlistLoading ? (
-                                        <div className="h-12 w-36 rounded-xl bg-bg-hover animate-pulse" />
+                                        <div className="h-12 w-36 rounded-xl bg-overlay animate-pulse" />
                                     ) : (
                                         <Button
                                             variant="secondary"
                                             icon={inWatchlist ? BookmarkCheck : Bookmark}
                                             onClick={() => toggleWatchlist({ title: movie.title, posterPath: posterUrl(movie.poster_path) })}
-                                            className={inWatchlist ? "!border-purple !text-purple" : ""}
+                                            className={inWatchlist ? "!border-purple-500 !text-purple-500" : ""}
                                         >
                                             {inWatchlist ? "Koleksiyonda" : "Koleksiyona Ekle"}
                                         </Button>
@@ -351,7 +385,7 @@ export default function FilmDetailPage({
 
                                 <motion.div whileTap={{ scale: 0.9 }}>
                                     {watchedLoading ? (
-                                        <div className="h-12 w-36 rounded-xl bg-bg-hover animate-pulse" />
+                                        <div className="h-12 w-36 rounded-xl bg-overlay animate-pulse" />
                                     ) : (
                                         <Button
                                             variant={watched ? "primary" : "secondary"}
@@ -376,8 +410,8 @@ export default function FilmDetailPage({
                 <section className="px-4 sm:px-6 lg:px-8" style={{ paddingTop: "20px", paddingBottom: "40px" }}>
                     <div className="max-w-7xl mx-auto">
                         <div className="flex items-center gap-2 mb-5">
-                            <MonitorPlay size={22} className="text-purple" />
-                            <h2 className="font-display text-2xl font-bold text-text-primary">Platformlarda İzle</h2>
+                            <MonitorPlay size={22} className="text-purple-500" />
+                            <h2 className="font-display text-2xl font-bold text-white">Platformlarda İzle</h2>
                         </div>
 
                         <div className="flex flex-col gap-6">
@@ -389,7 +423,7 @@ export default function FilmDetailPage({
                                         {providers.flatrate.map((p) => (
                                             <div
                                                 key={p.provider_id}
-                                                className="flex items-center gap-3 bg-bg-card border border-border rounded-xl px-4 py-3 hover:border-purple/50 transition-colors"
+                                                className="flex items-center gap-3 bg-raised border border-border-dim rounded-xl px-4 py-3 hover:border-purple-500/50 transition-colors"
                                             >
                                                 {p.logo_path && (
                                                     <Image
@@ -400,7 +434,7 @@ export default function FilmDetailPage({
                                                         className="rounded-lg"
                                                     />
                                                 )}
-                                                <span className="text-sm font-medium text-text-primary">{p.provider_name}</span>
+                                                <span className="text-sm font-medium text-white">{p.provider_name}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -415,7 +449,7 @@ export default function FilmDetailPage({
                                         {providers.rent.map((p) => (
                                             <div
                                                 key={p.provider_id}
-                                                className="flex items-center gap-3 bg-bg-card border border-border rounded-xl px-4 py-3 hover:border-purple/50 transition-colors"
+                                                className="flex items-center gap-3 bg-raised border border-border-dim rounded-xl px-4 py-3 hover:border-purple-500/50 transition-colors"
                                             >
                                                 {p.logo_path && (
                                                     <Image
@@ -426,7 +460,7 @@ export default function FilmDetailPage({
                                                         className="rounded-lg"
                                                     />
                                                 )}
-                                                <span className="text-sm font-medium text-text-primary">{p.provider_name}</span>
+                                                <span className="text-sm font-medium text-white">{p.provider_name}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -441,7 +475,7 @@ export default function FilmDetailPage({
                                         {providers.buy.map((p) => (
                                             <div
                                                 key={p.provider_id}
-                                                className="flex items-center gap-3 bg-bg-card border border-border rounded-xl px-4 py-3 hover:border-purple/50 transition-colors"
+                                                className="flex items-center gap-3 bg-raised border border-border-dim rounded-xl px-4 py-3 hover:border-purple-500/50 transition-colors"
                                             >
                                                 {p.logo_path && (
                                                     <Image
@@ -452,7 +486,7 @@ export default function FilmDetailPage({
                                                         className="rounded-lg"
                                                     />
                                                 )}
-                                                <span className="text-sm font-medium text-text-primary">{p.provider_name}</span>
+                                                <span className="text-sm font-medium text-white">{p.provider_name}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -465,7 +499,7 @@ export default function FilmDetailPage({
                                     href={providers.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-sm text-purple hover:text-purple-light transition-colors"
+                                    className="inline-flex items-center gap-2 text-sm text-purple-500 hover:text-purple-400 transition-colors"
                                 >
                                     <ExternalLink size={14} />
                                     Tüm platformları gör (JustWatch)
@@ -481,9 +515,9 @@ export default function FilmDetailPage({
          ========================================== */}
             <section className="px-4 sm:px-6 lg:px-8" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
                 <div className="max-w-7xl mx-auto">
-                    <h2 className="font-display text-2xl font-bold text-text-primary mb-4">Hikaye</h2>
+                    <h2 className="font-display text-2xl font-bold text-white mb-4">Hikaye</h2>
                     {movie.overview ? (
-                        <p className="text-text-secondary leading-relaxed max-w-3xl text-base">
+                        <p className="text-text-sec leading-relaxed max-w-3xl text-base">
                             {movie.overview}
                         </p>
                     ) : (
@@ -528,7 +562,7 @@ export default function FilmDetailPage({
             {movie.credits?.cast && movie.credits.cast.length > 0 && (
                 <section className="px-4 sm:px-6 lg:px-8" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
                     <div className="max-w-7xl mx-auto">
-                        <h2 className="font-display text-2xl font-bold text-text-primary mb-6">Oyuncular</h2>
+                        <h2 className="font-display text-2xl font-bold text-white mb-6">Oyuncular</h2>
 
                         <ScrollableRow innerClassName="flex gap-5">
                             {movie.credits.cast.slice(0, 20).map((actor: TMDBCastMember, index: number) => (
@@ -545,8 +579,8 @@ export default function FilmDetailPage({
             {trailer && (
                 <section className="px-4 sm:px-6 lg:px-8 pb-20" style={{ paddingTop: "40px" }}>
                     <div className="max-w-7xl mx-auto">
-                        <h2 className="font-display text-2xl font-bold text-text-primary mb-6">Fragman</h2>
-                        <div className="relative w-full max-w-4xl rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: "16/9" }}>
+                        <h2 className="font-display text-2xl font-bold text-white mb-6">Fragman</h2>
+                        <div className="relative w-full max-w-4xl rounded-2xl overflow-hidden border border-border-dim" style={{ aspectRatio: "16/9" }}>
                             <iframe
                                 src={`https://www.youtube.com/embed/${trailer.key}`}
                                 title={trailer.name}
@@ -576,7 +610,7 @@ function ActorCard({ actor, index }: { actor: TMDBCastMember; index: number }) {
         >
             <Link href={`/oyuncu/${actor.id}`} className="group">
                 <div className="flex flex-col items-center w-[100px] flex-shrink-0">
-                    <div className="relative w-[80px] h-[80px] rounded-full overflow-hidden bg-bg-card border-2 border-border group-hover:border-purple transition-colors mb-2">
+                    <div className="relative w-[80px] h-[80px] rounded-full overflow-hidden bg-raised border-2 border-border-dim group-hover:border-purple-500 transition-colors mb-2">
                         {actor.profile_path && !imgError ? (
                             <Image
                                 src={profileUrl(actor.profile_path)}
@@ -594,7 +628,7 @@ function ActorCard({ actor, index }: { actor: TMDBCastMember; index: number }) {
                             </div>
                         )}
                     </div>
-                    <h3 className="text-xs font-medium text-text-primary text-center leading-tight line-clamp-2 group-hover:text-purple transition-colors">
+                    <h3 className="text-xs font-medium text-white text-center leading-tight line-clamp-2 group-hover:text-purple-500 transition-colors">
                         {actor.name}
                     </h3>
                     <p className="text-[10px] text-text-muted text-center leading-tight line-clamp-1 mt-0.5">
@@ -623,7 +657,7 @@ function InfoItem({
             <Icon size={16} className="text-text-muted mt-0.5 flex-shrink-0" />
             <div>
                 <p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">{label}</p>
-                <p className="text-text-primary text-sm font-medium">{value}</p>
+                <p className="text-white text-sm font-medium">{value}</p>
             </div>
         </div>
     );

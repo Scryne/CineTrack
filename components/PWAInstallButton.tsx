@@ -23,13 +23,15 @@ export default function PWAInstallButton() {
         window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
         // Zaten yüklüyse state'i güncelle
-        window.addEventListener("appinstalled", () => {
+        const handleAppInstalled = () => {
             setIsInstallable(false);
             setDeferredPrompt(null);
-        });
+        };
+        window.addEventListener("appinstalled", handleAppInstalled);
 
         return () => {
             window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+            window.removeEventListener("appinstalled", handleAppInstalled);
         };
     }, []);
 

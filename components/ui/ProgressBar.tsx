@@ -1,56 +1,54 @@
-"use client";
-
-import React from "react";
-import { motion } from "framer-motion";
-
-type ProgressColor = "purple" | "success";
-type ProgressSize = "sm" | "md";
+'use client'
+import { useEffect, useRef } from 'react'
+import { cn } from '@/lib/utils'
 
 interface ProgressBarProps {
-    value: number;
-    color?: ProgressColor;
-    size?: ProgressSize;
-    showLabel?: boolean;
-    className?: string;
+    value: number
+    color?: 'purple' | 'success'
+    size?: 'xs' | 'sm' | 'md'
+    showLabel?: boolean
+    className?: string
+    animated?: boolean
 }
 
-const colorStyles: Record<ProgressColor, string> = {
-    purple: "bg-[#7B5CF0]",
-    success: "bg-[#22C55E]",
-};
-
-const sizeStyles: Record<ProgressSize, string> = {
-    sm: "h-1.5",
-    md: "h-2.5",
-};
+const sizeMap: Record<string, string> = { xs: 'h-[2px]', sm: 'h-[3px]', md: 'h-1.5' }
+const colorMap: Record<string, string> = {
+    purple: 'bg-purple-500',
+    success: 'bg-ok',
+}
 
 export default function ProgressBar({
-    value,
-    color = "purple",
-    size = "md",
-    showLabel = false,
-    className = "",
-}: ProgressBarProps) {
-    const clampedValue = Math.min(100, Math.max(0, value));
+    value, color = 'purple', size = 'sm',
+    showLabel, className, animated = true,
+}: ProgressBarProps): React.ReactElement {
+    const barRef = useRef<HTMLDivElement>(null)
+    const clamped = Math.max(0, Math.min(100, value))
+
+    useEffect(() => {
+        if (!barRef.current || !animated) return
+        barRef.current.style.width = '0%'
+        const t = setTimeout(() => {
+            if (barRef.current) barRef.current.style.width = `${clamped}%`
+        }, 50)
+        return () => clearTimeout(t)
+    }, [clamped, animated])
 
     return (
-        <div className={`flex items-center gap-3 ${className}`}>
-            <div
-                className={`flex-1 bg-[#2A2A35] rounded-full overflow-hidden ${sizeStyles[size]}`}
-            >
-                <motion.div
-                    className={`h-full rounded-full ${colorStyles[color]}`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${clampedValue}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+        <div className={cn('flex items-center gap-2', className)}>
+            <div className={cn('flex-1 bg-white/[0.08] rounded-full overflow-hidden', sizeMap[size])}>
+                <div
+                    ref={barRef}
+                    style={animated ? { width: 0, transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)' } : { width: `${clamped}%` }}
+                    className={cn('h-full rounded-full', colorMap[color])}
                 />
             </div>
-
             {showLabel && (
-                <span className="text-xs font-medium text-[#8B8B99] tabular-nums min-w-[3ch] text-right">
-                    {Math.round(clampedValue)}%
+                <span className="text-[11px] text-text-muted tabular-nums">
+                    {clamped}%
                 </span>
             )}
         </div>
-    );
+    )
 }
+
+export { ProgressBar }

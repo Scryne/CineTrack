@@ -8,13 +8,13 @@ export function useWatched(tmdbId: string, type: 'film' | 'dizi') {
     const [pending, setPending] = useState(false)
 
     useEffect(() => {
+        let cancelled = false
         isWatched(tmdbId, type).then(result => {
-            setWatched(result)
-            setLoading(false)
+            if (!cancelled) { setWatched(result); setLoading(false) }
         }).catch(() => {
-            setWatched(false)
-            setLoading(false)
+            if (!cancelled) { setWatched(false); setLoading(false) }
         })
+        return () => { cancelled = true }
     }, [tmdbId, type])
 
     const toggle = async (item: { title: string; posterPath: string }) => {
@@ -29,7 +29,7 @@ export function useWatched(tmdbId: string, type: 'film' | 'dizi') {
             if (watched) {
                 await removeFromWatched(tmdbId, type)
             } else {
-                await addToWatched({ id: tmdbId, type, ...item })
+                await addToWatched({ id: tmdbId, type, ...item, watchedAt: new Date().toISOString() })
             }
         } catch {
             setWatched(previousState)

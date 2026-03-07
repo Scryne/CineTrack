@@ -8,10 +8,8 @@ const isDev = process.env.NODE_ENV === 'development'
 
 export const logger = {
     error: (message: string, error?: unknown) => {
-        if (isDev) {
-            console.error(`[CineTrack Error] ${message}`, error)
-        }
-        // Production'da burada Sentry veya benzeri bir servis çağrılabilir
+        // Always log errors, even in production
+        console.error(`[CineTrack Error] ${message}`, error || '')
     },
     warn: (message: string) => {
         if (isDev) {
