@@ -62,7 +62,12 @@ type TabKey = "week" | "calendar" | "upcoming";
 // ==========================================
 
 function formatDate(d: Date): string {
-    return d.toISOString().split("T")[0];
+    // Yerel tarih bilesenlerinden uret. toISOString() UTC'ye cevirdigi icin
+    // TMDB'nin yerel yayin tarihi ("YYYY-MM-DD") ile bir gun kayabiliyordu.
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
 }
 
 function isSameDay(d1: Date, d2: Date): boolean {

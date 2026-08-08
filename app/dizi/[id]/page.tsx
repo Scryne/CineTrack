@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
+import { logger } from "@/lib/logger";
 import { FastAverageColor } from "fast-average-color";
 import {
     Star,
@@ -27,7 +29,7 @@ import { getRatings } from "@/lib/omdb";
 import {
     getWatchProgress,
     getWatchedEpisodes,
-    markAllEpisodesWatched,
+    markAllSeriesEpisodesWatched,
     removeAllEpisodesWatched,
 } from "@/lib/db";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -141,15 +143,23 @@ export default function SeriesDetailPage({
 
     const onWatchedToggle = async (newWatchedState: boolean) => {
         if (!series) return;
-        if (!newWatchedState) {
-            await removeAllEpisodesWatched(params.id);
-            setWatchedEpCount(0);
-        } else {
-            const seasonData = series.seasons
-                .filter((s) => s.season_number > 0)
-                .map((s) => ({ seasonNumber: s.season_number, episodeCount: s.episode_count }));
-            await markAllEpisodesWatched(params.id, seasonData);
-            setWatchedEpCount(series.number_of_episodes || 0);
+        const previousEpCount = watchedEpCount;
+        try {
+            if (!newWatchedState) {
+                await removeAllEpisodesWatched(params.id);
+                setWatchedEpCount(0);
+            } else {
+                const seasonData = series.seasons
+                    .filter((s) => s.season_number > 0)
+                    .map((s) => ({ seasonNumber: s.season_number, episodeCount: s.episode_count }));
+                await markAllSeriesEpisodesWatched(params.id, seasonData);
+                setWatchedEpCount(series.number_of_episodes || 0);
+            }
+        } catch (error) {
+            // Yazma başarısız olduysa ilerleme sayacını eski değerine döndür
+            setWatchedEpCount(previousEpCount);
+            logger.error("Dizi izlendi durumu güncellenemedi", error);
+            toast.error("İşlem başarısız oldu, lütfen tekrar deneyin.");
         }
     };
 
@@ -225,13 +235,6 @@ export default function SeriesDetailPage({
         }
         loadData();
     }, [params.id]);
-
-    useEffect(() => {
-        if (watched && series && watchedEpCount === 0) {
-            onWatchedToggle(true);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [watched]);
 
     const trailer = series?.videos?.results?.find(
         (v: TMDBVideo) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")

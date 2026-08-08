@@ -133,7 +133,8 @@ export default function KoleksiyonPage(): React.ReactElement {
     const filteredWatchlist = useMemo(() => {
         let items = watchlist;
         if (filter !== "all") items = items.filter(i => i.type === filter);
-        return items.sort((a, b) => {
+        // Kopya uzerinde sirala — `items` filtre "all" iken dogrudan state dizisi.
+        return [...items].sort((a, b) => {
             if (sortBy === "name") return a.title.localeCompare(b.title);
             return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
         });
@@ -142,7 +143,8 @@ export default function KoleksiyonPage(): React.ReactElement {
     const filteredWatched = useMemo(() => {
         let items = watched;
         if (filter !== "all") items = items.filter(i => i.type === filter);
-        return items.sort((a, b) => new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime());
+        // Kopya uzerinde sirala — `items` filtre "all" iken dogrudan state dizisi.
+        return [...items].sort((a, b) => new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime());
     }, [watched, filter]);
 
     const activeCount = activeTab === "watchlist" ? filteredWatchlist.length : filteredWatched.length;

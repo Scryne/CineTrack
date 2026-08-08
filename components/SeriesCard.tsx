@@ -4,8 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
+import { logger } from "@/lib/logger";
 import { posterUrl, BLUR_PLACEHOLDER, getSeriesDetail } from "@/lib/tmdb";
-import { addToWatchlist, removeFromWatchlist, isInWatchlist, markAsWatched, removeFromWatched, isWatched, markAllEpisodesWatched, removeAllEpisodesWatched } from "@/lib/db";
+import { addToWatchlist, removeFromWatchlist, isInWatchlist, markAsWatched, removeFromWatched, isWatched, markAllSeriesEpisodesWatched, removeAllEpisodesWatched } from "@/lib/db";
 import type { TMDBSeriesResult } from "@/lib/tmdb";
 
 interface SeriesCardProps {
@@ -43,45 +45,59 @@ export default function SeriesCard({ series }: SeriesCardProps) {
     const handleWatchlist = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (inWatchlist) {
-            await removeFromWatchlist(seriesId, "dizi");
-            setInWatchlist(false);
-        } else {
-            await addToWatchlist({
-                id: seriesId,
-                type: "dizi",
-                title: series.name,
-                posterPath: poster,
-                addedAt: new Date().toISOString(),
-            });
-            setInWatchlist(true);
+        const previousInWatchlist = inWatchlist;
+        try {
+            if (inWatchlist) {
+                await removeFromWatchlist(seriesId, "dizi");
+                setInWatchlist(false);
+            } else {
+                await addToWatchlist({
+                    id: seriesId,
+                    type: "dizi",
+                    title: series.name,
+                    posterPath: poster,
+                    addedAt: new Date().toISOString(),
+                });
+                setInWatchlist(true);
+            }
+        } catch (error) {
+            setInWatchlist(previousInWatchlist);
+            logger.error("SeriesCard koleksiyon durumu güncellenemedi", error);
+            toast.error("İşlem başarısız oldu, lütfen tekrar deneyin.");
         }
     };
 
     const handleWatched = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (watched) {
-            await removeFromWatched(seriesId, "dizi");
-            await removeAllEpisodesWatched(seriesId);
-            setWatched(false);
-        } else {
-            await markAsWatched({
-                id: seriesId,
-                type: "dizi",
-                title: series.name,
-                posterPath: poster,
-                watchedAt: new Date().toISOString(),
-            });
-            setWatched(true);
-            // Tüm bölümleri izlendi olarak işaretle
-            const detail = await getSeriesDetail(seriesId);
-            if (detail?.seasons) {
-                const seasonData = detail.seasons
-                    .filter((s) => s.season_number > 0)
-                    .map((s) => ({ seasonNumber: s.season_number, episodeCount: s.episode_count }));
-                markAllEpisodesWatched(seriesId, seasonData);
+        const previousWatched = watched;
+        try {
+            if (watched) {
+                await removeFromWatched(seriesId, "dizi");
+                await removeAllEpisodesWatched(seriesId);
+                setWatched(false);
+            } else {
+                await markAsWatched({
+                    id: seriesId,
+                    type: "dizi",
+                    title: series.name,
+                    posterPath: poster,
+                    watchedAt: new Date().toISOString(),
+                });
+                setWatched(true);
+                // Tüm bölümleri izlendi olarak işaretle
+                const detail = await getSeriesDetail(seriesId);
+                if (detail?.seasons) {
+                    const seasonData = detail.seasons
+                        .filter((s) => s.season_number > 0)
+                        .map((s) => ({ seasonNumber: s.season_number, episodeCount: s.episode_count }));
+                    await markAllSeriesEpisodesWatched(seriesId, seasonData);
+                }
             }
+        } catch (error) {
+            setWatched(previousWatched);
+            logger.error("SeriesCard izlendi durumu güncellenemedi", error);
+            toast.error("İşlem başarısız oldu, lütfen tekrar deneyin.");
         }
     };
 

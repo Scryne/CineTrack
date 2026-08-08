@@ -283,41 +283,78 @@ export async function unmarkEpisodeWatched(
     if (error) throw error
 }
 
-export async function markAllEpisodesWatched(
-    seriesId: string,
-    seasonNumber?: number | any[],
-    episodes?: number[]
-) {
+export type SeriesSeasonSummary = {
+    seasonNumber: number;
+    episodeCount: number;
+};
+
+type EpisodeInsert = {
+    user_id: string;
+    series_id: string;
+    season_number: number;
+    episode_number: number;
+};
+
+// Tek bir upsert'te gönderilecek azami satır sayısı. Uzun soluklu diziler
+// (1000+ bölüm) tek istekte gönderilirse payload limitine takılabiliyor.
+const EPISODE_UPSERT_CHUNK_SIZE = 500;
+
+async function upsertEpisodesChunked(rows: EpisodeInsert[]) {
+    if (rows.length === 0) return
+
     const supabase = createClient()
+
+    for (let i = 0; i < rows.length; i += EPISODE_UPSERT_CHUNK_SIZE) {
+        const chunk = rows.slice(i, i + EPISODE_UPSERT_CHUNK_SIZE)
+        const { error } = await supabase
+            .from('episodes')
+            .upsert(chunk, { onConflict: 'user_id,series_id,season_number,episode_number' })
+
+        if (error) {
+            logger.error('upsertEpisodesChunked error:', error)
+            throw error
+        }
+    }
+}
+
+/** Bir sezonun belirtilen bölümlerini izlendi olarak işaretler. */
+export async function markSeasonEpisodesWatched(
+    seriesId: string,
+    seasonNumber: number,
+    episodes: number[]
+) {
     const user = await getAuthUser()
     if (!user) return
 
-    if (!seasonNumber || !episodes) return;
-
-    if (Array.isArray(seasonNumber)) {
-        const inserts: any[] = [];
-        seasonNumber.forEach((s: any) => {
-            for (let i = 1; i <= s.episodeCount; i++) {
-                inserts.push({ user_id: user.id, series_id: seriesId, season_number: s.seasonNumber, episode_number: i })
-            }
-        });
-        const { error } = await supabase.from('episodes').upsert(inserts, { onConflict: 'user_id,series_id,season_number,episode_number' });
-        if (error) throw error;
-        return;
-    }
-
-    const inserts = episodes.map(ep => ({
+    await upsertEpisodesChunked(episodes.map(ep => ({
         user_id: user.id,
         series_id: seriesId,
-        season_number: seasonNumber as number,
+        season_number: seasonNumber,
         episode_number: ep,
-    }))
+    })))
+}
 
-    const { error } = await supabase
-        .from('episodes')
-        .upsert(inserts, { onConflict: 'user_id,series_id,season_number,episode_number' })
+/** Dizinin verilen sezonlarındaki tüm bölümleri izlendi olarak işaretler. */
+export async function markAllSeriesEpisodesWatched(
+    seriesId: string,
+    seasons: SeriesSeasonSummary[]
+) {
+    const user = await getAuthUser()
+    if (!user) return
 
-    if (error) throw error
+    const rows: EpisodeInsert[] = []
+    for (const season of seasons) {
+        for (let i = 1; i <= season.episodeCount; i++) {
+            rows.push({
+                user_id: user.id,
+                series_id: seriesId,
+                season_number: season.seasonNumber,
+                episode_number: i,
+            })
+        }
+    }
+
+    await upsertEpisodesChunked(rows)
 }
 
 export async function removeAllEpisodesWatched(
@@ -537,6 +574,7 @@ export async function saveWatchProgress(progress: WatchProgress) {
             duration: progress.duration || 0,
             season_number: progress.season,
             episode_number: progress.episode,
+            episode_title: progress.episodeTitle,
             total_episodes: progress.totalEpisodes,
             watched_episodes: progress.watchedEpisodes
         }, { onConflict: 'user_id,tmdb_id,type' })
@@ -562,6 +600,7 @@ function mapToProgress(d: any): WatchProgress {
         duration: d.duration,
         season: d.season_number || undefined,
         episode: d.episode_number || undefined,
+        episodeTitle: d.episode_title || undefined,
         totalEpisodes: d.total_episodes || undefined,
         watchedEpisodes: d.watched_episodes || undefined,
         updatedAt: d.updated_at || new Date().toISOString()
@@ -904,10 +943,15 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
     const timeStr = data?.notification_time || "20:00";
     const [hourStr, minStr] = timeStr.split(":");
 
+    // NaN kontrolü: `|| 20` kullanılırsa geçerli bir değer olan 0 (gece yarısı)
+    // falsy olduğu için sessizce 20'ye dönüşüyordu.
+    const parsedHour = parseInt(hourStr, 10);
+    const parsedMinute = parseInt(minStr, 10);
+
     return {
         enabled: data?.notification_enabled ?? false,
-        hour: parseInt(hourStr) || 20,
-        minute: parseInt(minStr) || 0
+        hour: Number.isNaN(parsedHour) ? 20 : parsedHour,
+        minute: Number.isNaN(parsedMinute) ? 0 : parsedMinute
     };
 }
 

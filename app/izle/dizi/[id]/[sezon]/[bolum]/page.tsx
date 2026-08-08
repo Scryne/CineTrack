@@ -39,6 +39,10 @@ import Button from '@/components/ui/Button'
 import RatingPicker from '@/components/RatingPicker'
 import ScrollableRow from '@/components/ui/ScrollableRow'
 
+// Bölümü otomatik "izlendi" işaretlemek için gereken görünür ön plan süresi
+const AUTO_COMPLETE_SECONDS = 5 * 60
+const AUTO_COMPLETE_TICK_SECONDS = 10
+
 export default function WatchEpisodePage({ params }: { params: { id: string, sezon: string, bolum: string } }) {
     const router = useRouter()
     const seriesId = params.id
@@ -72,6 +76,9 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
             }, 10000)
             return () => clearTimeout(timer)
         }
+        // Yükleme bittiyse zaman aşımı bayrağını sıfırla — yavaş ama başarılı
+        // bir yüklemede hata ekranının kalıcı olarak takılı kalmasını engeller.
+        setFetchTimeout(false)
         return undefined
     }, [loading])
 
@@ -84,6 +91,8 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
     const [subtitleError, setSubtitleError] = useState<string | null>(null)
     const [hasError, setHasError] = useState(false)
     const [allSourcesFailed, setAllSourcesFailed] = useState(false)
+    // Oynatıcı gerçekten bir kaynak yükledi mi? (otomatik "izlendi" işareti için ön koşul)
+    const [playerLoaded, setPlayerLoaded] = useState(false)
 
     // Interaction states
     const [inWatchlist, setInWatchlist] = useState(false)
@@ -232,36 +241,61 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
         return () => { isMounted = false }
     }, [selectedSeason, seriesId, seasonNumber, series])
 
-    // Auto complete tracking (5 mins)
+    // Yeni bölüme veya yeni kaynağa geçildiğinde oynatıcı sıfırdan yüklenir.
+    // Sayfa bölümler arasında yeniden mount edilmediği için bayrağı elle sıfırla.
     useEffect(() => {
-        if (!loading && currentEpisode && series) {
-            const epName = currentEpisode.name
-            autoCompleteTimerRef.current = setTimeout(async () => {
-                await markEpisodeWatched(seriesId, seasonNumber, episodeNumber)
-                const epListUrl = await getWatchedEpisodes(seriesId);
+        setPlayerLoaded(false)
+    }, [seriesId, seasonNumber, episodeNumber, sourceIndex])
 
-                await saveWatchProgress({
-                    tmdbId: seriesId,
-                    type: 'dizi',
-                    title: series.name,
-                    posterPath: posterUrl(series.poster_path),
-                    backdropPath: series.backdrop_path ? backdropUrl(series.backdrop_path) : undefined,
-                    season: seasonNumber,
-                    episode: episodeNumber,
-                    episodeTitle: epName,
-                    totalEpisodes: series.number_of_episodes,
-                    watchedEpisodes: epListUrl.length,
-                    updatedAt: new Date().toISOString()
-                })
-            }, 5 * 60 * 1000)
-        }
+    // Auto complete tracking — 5 dakika GÖRÜNÜR ön planda izleme sonrası
+    useEffect(() => {
+        if (loading || !currentEpisode || !series) return
+        // Oynatıcı hiç yüklenmediyse ya da tüm kaynaklar düştüyse işaretleme
+        if (!playerLoaded || allSourcesFailed) return
+
+        const epName = currentEpisode.name
+        let visibleSeconds = 0
+
+        autoCompleteTimerRef.current = setInterval(async () => {
+            if (document.hidden) return; // Don't track time when tab is backgrounded
+
+            visibleSeconds += AUTO_COMPLETE_TICK_SECONDS
+            if (visibleSeconds < AUTO_COMPLETE_SECONDS) return
+
+            if (autoCompleteTimerRef.current) {
+                clearInterval(autoCompleteTimerRef.current)
+                autoCompleteTimerRef.current = null
+            }
+
+            await markEpisodeWatched(seriesId, seasonNumber, episodeNumber)
+            const epListUrl = await getWatchedEpisodes(seriesId);
+            const currentProgress = await getWatchProgress(seriesId, "dizi");
+
+            await saveWatchProgress({
+                tmdbId: seriesId,
+                type: 'dizi',
+                title: series.name,
+                posterPath: posterUrl(series.poster_path),
+                backdropPath: series.backdrop_path ? backdropUrl(series.backdrop_path) : undefined,
+                season: seasonNumber,
+                episode: episodeNumber,
+                episodeTitle: epName,
+                totalEpisodes: series.number_of_episodes,
+                watchedEpisodes: epListUrl.length,
+                // Birikmiş süreyi koru — aksi halde saveWatchProgress bunu 0'a yazar
+                timeSpentSeconds: currentProgress?.season === seasonNumber && currentProgress?.episode === episodeNumber
+                    ? currentProgress.timeSpentSeconds
+                    : 0,
+                updatedAt: new Date().toISOString()
+            })
+        }, AUTO_COMPLETE_TICK_SECONDS * 1000)
 
         return () => {
             if (autoCompleteTimerRef.current) {
-                clearTimeout(autoCompleteTimerRef.current)
+                clearInterval(autoCompleteTimerRef.current)
             }
         }
-    }, [loading, series, seriesId, seasonNumber, episodeNumber])
+    }, [loading, series, seriesId, seasonNumber, episodeNumber, playerLoaded, allSourcesFailed])
 
     // Next / Prev logic
     const getNextEpisodeInfo = useCallback(() => {
@@ -390,12 +424,31 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
         touchEndX.current = null
     }
 
-    // Window message listener for video end events
+    // Window message listener for video end events.
+    // Yalnızca o an aktif olan kaynağın kendi origin'inden gelen, tam eşleşen
+    // "ended" mesajları kabul edilir. Gömülü üçüncü taraf oynatıcılar (ve
+    // içlerindeki reklam scriptleri) güvenilmez olduğu için origin doğrulaması
+    // olmadan herhangi bir sayfa bölüm gezinmesini tetikleyebiliyordu.
     useEffect(() => {
+        const activeSource = SOURCES[sourceIndex]
+        if (!activeSource) return
+
+        let allowedOrigin: string
+        try {
+            allowedOrigin = new URL(activeSource.getMovieUrl('1')).origin
+        } catch {
+            return
+        }
+
         const handleMessage = (event: MessageEvent) => {
-            if (typeof event.data === 'string' && (event.data.includes('ended') || event.data.includes('video_end'))) {
+            if (event.origin !== allowedOrigin) return
+
+            const data = event.data
+            if (data === 'ended') {
                 handleNextEpisodeClick()
-            } else if (event.data && typeof event.data === 'object' && (event.data.event === 'ended' || event.data.type === 'ended')) {
+                return
+            }
+            if (data && typeof data === 'object' && (data.type === 'ended' || data.event === 'ended')) {
                 handleNextEpisodeClick()
             }
         }
@@ -403,7 +456,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
         window.addEventListener('message', handleMessage)
 
         return () => window.removeEventListener('message', handleMessage)
-    }, [handleNextEpisodeClick])
+    }, [handleNextEpisodeClick, sourceIndex])
 
     // Handle subtitle selection: download + load blob
     const handleSubtitleChange = async (id: number | null) => {
@@ -651,7 +704,7 @@ export default function WatchEpisodePage({ params }: { params: { id: string, sez
                         embedUrl={embedUrl}
                         title={`${series.name} S${seasonNumber}E${episodeNumber}`}
                         onError={handleError}
-                        onLoad={() => { }}
+                        onLoad={() => setPlayerLoaded(true)}
                         subtitleUrl={subtitleBlobUrl}
                         allSourcesFailed={allSourcesFailed}
                         onAddToWatchlist={handleWatchlist}

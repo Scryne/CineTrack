@@ -97,7 +97,11 @@ function ToggleSwitch({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
 
 function AnimatedCounter({ value, suffix = "", className = "" }: { value: number | string; suffix?: string; className?: string }): React.ReactElement {
     const [displayValue, setDisplayValue] = useState(0);
-    const numValue = typeof value === "string" ? parseFloat(value) || 0 : value;
+    // "—" / "..." gibi sayısal olmayan sentinel degerler parseFloat ile NaN
+    // uretiyor; `|| 0` bunlari gercek bir 0'a cevirdigi icin oldugu gibi gecirilir.
+    const parsedValue = typeof value === "string" ? parseFloat(value) : value;
+    const isNumeric = !Number.isNaN(parsedValue);
+    const numValue = isNumeric ? parsedValue : 0;
 
     useEffect(() => {
         if (numValue === 0) { setDisplayValue(0); return; }
@@ -112,6 +116,10 @@ function AnimatedCounter({ value, suffix = "", className = "" }: { value: number
         }, duration / steps);
         return () => clearInterval(timer);
     }, [numValue]);
+
+    if (!isNumeric) {
+        return <span className={className}>{value}{suffix}</span>;
+    }
 
     return (
         <span className={className}>

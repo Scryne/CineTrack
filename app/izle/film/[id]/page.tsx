@@ -62,6 +62,9 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
             }, 10000) // 10 saniye timeout
             return () => clearTimeout(timer)
         }
+        // Yükleme bittiyse zaman aşımı bayrağını sıfırla — yavaş ama başarılı
+        // bir yüklemede hata ekranının kalıcı olarak takılı kalmasını engeller.
+        setFetchTimeout(false)
         return undefined
     }, [loading])
 
@@ -125,7 +128,7 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
                     type: 'film',
                     title: data.title,
                     posterPath: posterUrl(data.poster_path),
-                    backdropPath: data.backdrop_path ? posterUrl(data.backdrop_path) : undefined,
+                    backdropPath: data.backdrop_path ? backdropUrl(data.backdrop_path) : undefined,
                     timeSpentSeconds: progress?.timeSpentSeconds || 0,
                     updatedAt: new Date().toISOString()
                 })
@@ -141,6 +144,7 @@ export default function WatchMoviePage({ params }: { params: { id: string } }) {
         if (!movie) return;
 
         const interval = setInterval(async () => {
+            if (document.hidden) return; // Don't track time when tab is backgrounded
             const currentProgress = await getWatchProgress(params.id, "film");
             if (currentProgress) {
                 await saveWatchProgress({
