@@ -58,3 +58,7 @@ response.html
 
 # Gemini
 .gemini/
+
+# Yerel betik çıktıları (2026-10-26 denetimi: izleniyordu)
+*.log
+output.txt
