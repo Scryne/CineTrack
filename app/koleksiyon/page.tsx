@@ -30,7 +30,7 @@ import { cn, startLoad } from "@/lib/utils";
 
 const TABS = [
     { id: "watchlist", label: "İzleme listem", icon: Bookmark },
-    { id: "watched", label: "Izlediklerim", icon: CheckCircle2 },
+    { id: "watched", label: "İzlediklerim", icon: CheckCircle2 },
 ] as const;
 
 type TabId = typeof TABS[number]["id"];
@@ -152,7 +152,7 @@ export default function KoleksiyonPage(): React.ReactElement {
     const renderContent = (): React.ReactElement | null => {
         if (activeTab === "watchlist") {
             if (filteredWatchlist.length === 0) {
-                return <EmptyState icon={Bookmark} title="İzleme listen boş" description="İzlemek istediğin film ve dizileri koleksiyonuna ekle, burada takip et." action={{ label: "Kesfetmeye Basla", href: "/kesif" }} />;
+                return <EmptyState icon={Bookmark} title="İzleme listen boş" description="İzlemek istediğin film ve dizileri koleksiyonuna ekle, burada takip et." action={{ label: "Keşfetmeye Başla", href: "/kesif" }} />;
             }
             return (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -193,7 +193,7 @@ export default function KoleksiyonPage(): React.ReactElement {
 
         if (activeTab === "watched") {
             if (filteredWatched.length === 0) {
-                return <EmptyState icon={CheckCircle2} title="Henuz hic izleme kaydi yok" description="Izlediginiz icerikleri isaretleyerek kendi filmografinizi olusturabilirsiniz." action={{ label: "Ana Sayfaya Don", href: "/" }} />;
+                return <EmptyState icon={CheckCircle2} title="Henüz hiç izleme kaydı yok" description="İzlediğiniz içerikleri işaretleyerek kendi filmografinizi oluşturabilirsiniz." action={{ label: "Ana Sayfaya Dön", href: "/" }} />;
             }
             return (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">

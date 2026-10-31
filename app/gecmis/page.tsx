@@ -117,7 +117,7 @@ export default function HistoryPage(): React.ReactElement {
                     icon={History}
                     title="Henüz geçmişinizde bir şey yok"
                     description="İzlemeye başladığınız film ve diziler burada listelenecektir."
-                    action={{ label: "Kesfetmeye Basla", href: "/kesif" }}
+                    action={{ label: "Keşfetmeye Başla", href: "/kesif" }}
                 />
             ) : (
                 <div className="space-y-10">

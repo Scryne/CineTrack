@@ -207,7 +207,7 @@ export default function Home(): React.ReactElement {
             const recs = await getRecommendations(tmdbIdStr, item.type);
             if (recs && recs.length > 5) {
               finalRecs = recs;
-              finalSource = { title: item.title || "Icerik", type: item.type };
+              finalSource = { title: item.title || "İçerik", type: item.type };
               break;
             }
           }
@@ -221,7 +221,7 @@ export default function Home(): React.ReactElement {
             const recs = await getRecommendations(tmdbIdStr, item.type);
             if (recs && recs.length > 5) {
               finalRecs = recs;
-              finalSource = { title: item.title || "Icerik", type: item.type };
+              finalSource = { title: item.title || "İçerik", type: item.type };
               break;
             }
           }
@@ -233,7 +233,7 @@ export default function Home(): React.ReactElement {
         } else {
           const movies = await getTrendingMovies();
           if (movies && movies.length > 0) {
-            setRecommendationSource({ title: "Populer Icerikler", type: "film" });
+            setRecommendationSource({ title: "Popüler İçerikler", type: "film" });
             setRecommendations(movies.slice(0, 15));
           }
         }

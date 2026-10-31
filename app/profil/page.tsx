@@ -406,7 +406,7 @@ export default function ProfilPage(): React.ReactElement {
                             disabled={watched.length === 0}
                             className="bg-white text-black px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-gray-100 transition-all disabled:opacity-40"
                         >
-                            <Camera size={15} /> Paylas
+                            <Camera size={15} /> Paylaş
                         </button>
                         <button
                             onClick={() => setShowSettingsModal(true)}
@@ -422,8 +422,8 @@ export default function ProfilPage(): React.ReactElement {
                 STATS
                 ========================================== */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-                <StatCard icon={Film} label="Izlenen Film" value={totalMovies} color="#7B5CF0" loading={loading} />
-                <StatCard icon={Tv2} label="Izlenen Dizi" value={totalSeries} color="#22C55E" loading={loading} />
+                <StatCard icon={Film} label="İzlenen Film" value={totalMovies} color="#7B5CF0" loading={loading} />
+                <StatCard icon={Tv2} label="İzlenen Dizi" value={totalSeries} color="#22C55E" loading={loading} />
                 <StatCard icon={Clock} label="Harcanan Saat" value={detailsLoading ? "..." : runtimeHours} color="#3B82F6" loading={detailsLoading} />
                 <StatCard icon={Star} label="Ortalama Puan" value={avgRating > 0 ? avgRating.toFixed(1) : "—"} color="#F59E0B" loading={false} />
             </section>
@@ -473,7 +473,7 @@ export default function ProfilPage(): React.ReactElement {
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-center py-6">
                             <Clapperboard size={28} className="mb-3 opacity-40" />
-                            <p className="text-[12px]">Icerik izledikce zevk analizin acilacak.</p>
+                            <p className="text-[12px]">İçerik izledikçe zevk analizin açılacak.</p>
                         </div>
                     )}
                 </div>
@@ -484,7 +484,7 @@ export default function ProfilPage(): React.ReactElement {
                         <div>
                             <h2 className="text-[15px] font-semibold text-white flex items-center gap-2">
                                 <TrendingUp size={16} className="text-ok" />
-                                Son Izlenenler
+                                Son İzlenenler
                             </h2>
                             <p className="text-[11px] text-text-dim mt-0.5">{recentWatched.length} yapim</p>
                         </div>

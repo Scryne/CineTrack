@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
     { id: "devam", label: "Devam Ediyorum", icon: Play },
-    { id: "tamamlandi", label: "Tamamladiklarim", icon: Trophy },
+    { id: "tamamlandi", label: "Tamamladıklarım", icon: Trophy },
     { id: "bekliyor", label: "Bekliyorum", icon: Clock },
 ] as const;
 
@@ -154,7 +154,7 @@ export default function DizilerimPage(): React.ReactElement {
             className="max-w-[1400px] mx-auto px-16 py-12 max-lg:px-6 max-md:px-4 max-md:py-8"
         >
             {/* Tab system */}
-            <div className="bg-raised border border-border-dim rounded-xl p-1 inline-flex gap-1 mb-6">
+            <div className="bg-raised border border-border-dim rounded-xl p-1 flex max-w-full gap-1 overflow-x-auto mb-6 sm:inline-flex" role="tablist" aria-label="Dizi durumu">
                 {TABS.map((tab) => {
                     const Icon = tab.icon;
                     const active = activeTab === tab.id;
@@ -162,9 +162,11 @@ export default function DizilerimPage(): React.ReactElement {
                     return (
                         <button
                             key={tab.id}
+                            role="tab"
+                            aria-selected={active}
                             onClick={() => setActiveTab(tab.id)}
                             className={cn(
-                                "h-8 px-4 rounded-lg text-[13px] font-medium flex items-center gap-1.5 transition-colors",
+                                "h-8 shrink-0 whitespace-nowrap px-3 sm:px-4 rounded-lg text-[13px] font-medium flex items-center gap-1.5 transition-colors",
                                 active
                                     ? "bg-purple-500 text-white shadow-glow-sm"
                                     : "text-text-muted hover:text-text-sec hover:bg-overlay"
@@ -216,9 +218,9 @@ export default function DizilerimPage(): React.ReactElement {
                     {filteredAndSortedData.length === 0 ? (
                         <EmptyState
                             icon={activeTab === "devam" ? Play : activeTab === "tamamlandi" ? Trophy : Clock}
-                            title={activeTab === "devam" ? "Su an izlediginiz bir dizi yok" : activeTab === "tamamlandi" ? "Henuz tamamladiginiz dizi yok" : "Bekleyen diziniz yok"}
+                            title={activeTab === "devam" ? "Şu an izlediğiniz bir dizi yok" : activeTab === "tamamlandi" ? "Henüz tamamladığınız dizi yok" : "Bekleyen diziniz yok"}
                             description="Keşfet sayfasından yeni diziler bulabilir ve koleksiyonunuza ekleyebilirsiniz."
-                            action={{ label: "Kesfetmeye Basla", href: "/kesif" }}
+                            action={{ label: "Keşfetmeye Başla", href: "/kesif" }}
                         />
                     ) : (
                         <div className={activeTab === "devam" ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"}>
@@ -288,7 +290,7 @@ function SeriesCardView({ info, activeTab, rating }: { info: SeriesProgressInfo;
                             variant={d.status === "Ended" ? "success" : d.status === "Canceled" ? "muted" : "purple"}
                             className="shrink-0 text-[10px]"
                         >
-                            {d.status === "Ended" ? "Tamamlandi" : d.status === "Canceled" ? "Iptal" : "Devam Ediyor"}
+                            {d.status === "Ended" ? "Tamamlandı" : d.status === "Canceled" ? "İptal" : "Devam Ediyor"}
                         </Badge>
                     </div>
 
@@ -400,7 +402,7 @@ function SeriesCardView({ info, activeTab, rating }: { info: SeriesProgressInfo;
                             {diffDays} gundur bekliyor
                         </span>
                         <span className="text-[10px] text-text-dim">
-                            {d.status === "Ended" ? "Final Yapti" : d.status === "Canceled" ? "Iptal Edildi" : "Devam Ediyor"}
+                            {d.status === "Ended" ? "Final Yaptı" : d.status === "Canceled" ? "İptal Edildi" : "Devam Ediyor"}
                         </span>
                     </div>
                 </div>
