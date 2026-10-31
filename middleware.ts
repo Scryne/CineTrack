@@ -1,8 +1,15 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isLocalMode } from '@/lib/dataMode'
 
 export async function middleware(req: NextRequest) {
+    // Yerel modda hesap yok: her rota açık, giriş sayfası anlamsız.
+    if (isLocalMode) {
+        if (req.nextUrl.pathname.startsWith('/auth')) return NextResponse.redirect(new URL('/', req.url))
+        return NextResponse.next()
+    }
+
     let res = NextResponse.next({
         request: {
             headers: req.headers,

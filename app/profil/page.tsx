@@ -33,6 +33,8 @@ import Modal from "@/components/ui/Modal";
 import ShareCardModal from "@/components/profil/ShareCardModal";
 import { getCinemaPersonality } from "@/lib/cinema-personality";
 import { cn } from "@/lib/utils";
+import { isLocalMode } from "@/lib/dataMode";
+import LocalDataPanel from "@/components/profil/LocalDataPanel";
 
 import {
     Pencil,
@@ -589,6 +591,9 @@ export default function ProfilPage(): React.ReactElement {
                         )}
                     </div>
 
+{isLocalMode ? (
+                        <LocalDataPanel />
+                    ) : (
                     <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 p-4 rounded-xl bg-err/10 border border-err/20 hover:bg-err/20 transition-all text-left mt-4"
@@ -597,10 +602,11 @@ export default function ProfilPage(): React.ReactElement {
                             <LogOut size={18} />
                         </div>
                         <div>
-                            <p className="text-[13px] font-semibold text-err">Hesaptan Cikis Yap</p>
-                            <p className="text-[11px] text-err/60">Bu hesaptaki hicbir veri silinmez</p>
+                            <p className="text-[13px] font-semibold text-err">Hesaptan çıkış yap</p>
+                            <p className="text-[11px] text-err/60">Bu hesaptaki hiçbir veri silinmez</p>
                         </div>
                     </button>
+                    )}
                 </div>
             </Modal>
 

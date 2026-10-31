@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
+import { isLocalMode } from "@/lib/dataMode";
 
 // --- Nav linkleri ---
 const navLinks = [
@@ -268,16 +269,20 @@ export default function Navbar(): React.ReactElement | null {
                                 <Link href="/profil" className="flex items-center gap-2 px-4 py-3 text-sm text-text-sec hover:text-text-pri hover:bg-overlay transition-colors">
                                     <UserCircle2 size={16} /> Profil
                                 </Link>
-                                <div className="border-t border-border-dim" />
-                                <button
-                                    onClick={async () => {
-                                        await signOut();
-                                        router.push("/auth");
-                                    }}
-                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-err hover:text-err hover:bg-err/10 transition-colors text-left"
-                                >
-                                    <LogOut size={16} /> Cikis Yap
-                                </button>
+                                {!isLocalMode && (
+                                    <>
+                                        <div className="border-t border-border-dim" />
+                                        <button
+                                            onClick={async () => {
+                                                await signOut();
+                                                router.push("/auth");
+                                            }}
+                                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-err hover:text-err hover:bg-err/10 transition-colors text-left"
+                                        >
+                                            <LogOut size={16} /> Çıkış yap
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     ) : (
@@ -515,17 +520,19 @@ export default function Navbar(): React.ReactElement | null {
                                                     <UserCircle2 size={18} />
                                                     Profilim
                                                 </Link>
-                                                <button
-                                                    onClick={async () => {
-                                                        setIsMobileMenuOpen(false);
-                                                        await signOut();
-                                                        router.push("/auth");
-                                                    }}
-                                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors text-err hover:bg-err/10"
-                                                >
-                                                    <LogOut size={18} />
-                                                    Cikis Yap
-                                                </button>
+                                                {!isLocalMode && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            setIsMobileMenuOpen(false);
+                                                            await signOut();
+                                                            router.push("/auth");
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-colors text-err hover:bg-err/10"
+                                                    >
+                                                        <LogOut size={18} />
+                                                        Çıkış yap
+                                                    </button>
+                                                )}
                                             </>
                                         ) : (
                                             <Link
