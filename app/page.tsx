@@ -416,7 +416,7 @@ export default function Home(): React.ReactElement {
             ========================================== */}
         {continueItems.length > 0 && (
           <section className="max-w-[1400px] mx-auto px-16 max-lg:px-6 max-md:px-4 pt-12">
-            <SectionHeader title="Kaldigin Yerden Devam Et" className="mb-5" />
+            <SectionHeader title="Kaldığın yerden devam et" className="mb-5" />
             <ScrollableRow innerClassName="h-scroll pb-6 pt-2">
               {continueItems.map((item) => (
                 <Link
@@ -475,8 +475,8 @@ export default function Home(): React.ReactElement {
         {!loadingRecommendations && recommendations.length > 0 && recommendationSource && (
           <section className="max-w-[1400px] mx-auto px-16 max-lg:px-6 max-md:px-4">
             <SectionHeader
-              title="Sana Ozel"
-              subtitle="Izleme gecmisine gore"
+              title="Sana Özel"
+              subtitle="İzleme geçmişine göre"
               icon={Sparkles}
               className="mb-5"
             />
@@ -538,7 +538,7 @@ export default function Home(): React.ReactElement {
             GENRE DISCOVERY
             ========================================== */}
         <section className="max-w-[1400px] mx-auto px-16 max-lg:px-6 max-md:px-4 pb-8">
-          <SectionHeader title="Ture Gore Kesfet" className="mb-5" />
+          <SectionHeader title="Türe göre keşfet" className="mb-5" />
 
           {/* Genre pills */}
           <ScrollableRow innerClassName="h-scroll mb-6 pb-4 pt-2">
@@ -593,7 +593,7 @@ export default function Home(): React.ReactElement {
                 </div>
               ) : (
                 <p className="text-text-muted text-center py-12">
-                  Film bulunamadi.
+                  Film bulunamadı.
                 </p>
               )}
             </motion.div>

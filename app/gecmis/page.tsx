@@ -48,14 +48,14 @@ export default function HistoryPage(): React.ReactElement {
     const handleRemove = async (tmdbId: string, type: "film" | "dizi"): Promise<void> => {
         await removeProgress(tmdbId, type);
         setHistory(prev => prev.filter(h => h.tmdbId !== tmdbId || h.type !== type));
-        toast.success("Gecmisten silindi.");
+        toast.success("Geçmişten silindi.");
     };
 
     const handleClearAll = async (): Promise<void> => {
         await clearAllProgress();
         setHistory([]);
         setShowClearModal(false);
-        toast.success("Tum izleme gecmisiniz temizlendi.");
+        toast.success("Tüm izleme geçmişiniz temizlendi.");
     };
 
     // Group history by date
@@ -67,9 +67,9 @@ export default function HistoryPage(): React.ReactElement {
         const oneWeekAgo = new Date(today);
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        let group = "Daha Once";
-        if (date.toDateString() === today.toDateString()) group = "Bugun";
-        else if (date.toDateString() === yesterday.toDateString()) group = "Dun";
+        let group = "Daha Önce";
+        if (date.toDateString() === today.toDateString()) group = "Bugün";
+        else if (date.toDateString() === yesterday.toDateString()) group = "Dün";
         else if (date > oneWeekAgo) group = "Bu Hafta";
 
         if (!acc[group]) acc[group] = [];
@@ -77,7 +77,7 @@ export default function HistoryPage(): React.ReactElement {
         return acc;
     }, {} as Record<string, WatchProgress[]>), [history]);
 
-    const groupOrder = ["Bugun", "Dun", "Bu Hafta", "Daha Once"];
+    const groupOrder = ["Bugün", "Dün", "Bu Hafta", "Daha Önce"];
 
     if (loading) {
         return (
@@ -97,8 +97,8 @@ export default function HistoryPage(): React.ReactElement {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="font-display text-[28px] text-white mb-1">Izleme Gecmisi</h1>
-                    <p className="text-[14px] text-text-sec">Son izlediginiz dizi ve filmlere kaldiginiz yerden devam edin.</p>
+                    <h1 className="font-display text-[28px] text-white mb-1">İzleme Geçmişi</h1>
+                    <p className="text-[14px] text-text-sec">Son izlediğiniz dizi ve filmlere kaldığınız yerden devam edin.</p>
                 </div>
                 {history.length > 0 && (
                     <Button
@@ -107,7 +107,7 @@ export default function HistoryPage(): React.ReactElement {
                         icon={Trash2}
                         onClick={() => setShowClearModal(true)}
                     >
-                        Gecmisi Temizle
+                        Geçmişi Temizle
                     </Button>
                 )}
             </div>
@@ -115,8 +115,8 @@ export default function HistoryPage(): React.ReactElement {
             {history.length === 0 ? (
                 <EmptyState
                     icon={History}
-                    title="Henuz gecmisinizde bir sey yok"
-                    description="Izlemeye basladiginiz film ve diziler burada listelenecektir."
+                    title="Henüz geçmişinizde bir şey yok"
+                    description="İzlemeye başladığınız film ve diziler burada listelenecektir."
                     action={{ label: "Kesfetmeye Basla", href: "/kesif" }}
                 />
             ) : (
@@ -178,7 +178,7 @@ export default function HistoryPage(): React.ReactElement {
                                                 {item.type === "dizi" && item.totalEpisodes && item.watchedEpisodes !== undefined && (
                                                     <div className="mt-2 max-w-[200px]">
                                                         <div className="flex items-center justify-between text-[10px] text-text-muted mb-1">
-                                                            <span>Sezon Ilerlemesi</span>
+                                                            <span>Sezon İlerlemesi</span>
                                                             <span className="font-mono">{Math.round((item.watchedEpisodes / item.totalEpisodes) * 100)}%</span>
                                                         </div>
                                                         <ProgressBar value={Math.min((item.watchedEpisodes / item.totalEpisodes) * 100, 100)} color="purple" size="xs" />
@@ -195,7 +195,7 @@ export default function HistoryPage(): React.ReactElement {
                                                 <button
                                                     onClick={() => handleRemove(item.tmdbId, item.type)}
                                                     className="w-8 h-8 flex items-center justify-center rounded-lg text-text-sec hover:text-err hover:bg-err/10 transition-colors"
-                                                    title="Gecmisten Kaldir"
+                                                    title="Geçmişten Kaldır"
                                                 >
                                                     <X size={16} />
                                                 </button>
@@ -203,7 +203,7 @@ export default function HistoryPage(): React.ReactElement {
                                             <div className="w-full sm:hidden border-t border-border-dim pt-3 mt-1">
                                                 <Link href={watchHref(item.type, item.tmdbId, item.season)} className="w-full">
                                                     <Button variant="secondary" className="w-full justify-center" size="sm">
-                                                        Izlemeye Devam Et
+                                                        İzlemeye Devam Et
                                                     </Button>
                                                 </Link>
                                             </div>
@@ -222,7 +222,7 @@ export default function HistoryPage(): React.ReactElement {
                                 disabled={loadingMore}
                                 className="w-full md:w-auto min-w-[200px] justify-center"
                             >
-                                {loadingMore ? "Yukleniyor..." : "Daha Fazla Goster"}
+                                {loadingMore ? "Yükleniyor..." : "Daha Fazla Göster"}
                             </Button>
                         </div>
                     )}
@@ -232,15 +232,15 @@ export default function HistoryPage(): React.ReactElement {
             <Modal
                 isOpen={showClearModal}
                 onClose={() => setShowClearModal(false)}
-                title="Gecmisi Temizle"
+                title="Geçmişi Temizle"
             >
                 <div className="flex flex-col gap-6">
                     <p className="text-text-sec leading-relaxed">
-                        Tum izleme gecmisiniz geri donulemez sekilde silinecektir. Emin misiniz?
+                        Tüm izleme geçmişiniz geri dönülemez şekilde silinecektir. Emin misiniz?
                     </p>
                     <div className="flex justify-end gap-3">
                         <Button variant="secondary" onClick={() => setShowClearModal(false)}>
-                            Iptal
+                            İptal
                         </Button>
                         <Button variant="danger" onClick={handleClearAll} icon={Trash2}>
                             Evet, Temizle

@@ -197,8 +197,8 @@ export default function DizilerimPage(): React.ReactElement {
                         className="appearance-none bg-overlay border border-border-dim hover:border-border-bright rounded-lg h-9 pl-3 pr-8 text-[12px] text-white outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer transition-all"
                     >
                         <option value="activity">Son Aktivite</option>
-                        <option value="progress">Ilerlemeye Gore</option>
-                        <option value="name">Ada Gore (A-Z)</option>
+                        <option value="progress">İlerlemeye Göre</option>
+                        <option value="name">Ada Göre (A-Z)</option>
                     </select>
                     <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
                 </div>
@@ -217,7 +217,7 @@ export default function DizilerimPage(): React.ReactElement {
                         <EmptyState
                             icon={activeTab === "devam" ? Play : activeTab === "tamamlandi" ? Trophy : Clock}
                             title={activeTab === "devam" ? "Su an izlediginiz bir dizi yok" : activeTab === "tamamlandi" ? "Henuz tamamladiginiz dizi yok" : "Bekleyen diziniz yok"}
-                            description="Kesfet sayfasindan yeni diziler bulabilir ve koleksiyonunuza ekleyebilirsiniz."
+                            description="Keşfet sayfasından yeni diziler bulabilir ve koleksiyonunuza ekleyebilirsiniz."
                             action={{ label: "Kesfetmeye Basla", href: "/kesif" }}
                         />
                     ) : (
@@ -246,7 +246,7 @@ function SeriesCardView({ info, activeTab, rating }: { info: SeriesProgressInfo;
 
     // DEVAM EDIYORUM - Large horizontal card
     if (activeTab === "devam") {
-        let lastWatchedEpStr = "Henuz baslanmadi";
+        let lastWatchedEpStr = "Henüz başlanmadı";
         let nextEpLink = `/dizi/${d.id}`;
         const isFinished = info.progressPercentage === 100;
 
@@ -299,7 +299,7 @@ function SeriesCardView({ info, activeTab, rating }: { info: SeriesProgressInfo;
                         </div>
                         <ProgressBar value={info.progressPercentage} color="purple" size="md" />
                         <div className="mt-1.5 text-[11px] text-text-muted font-mono">
-                            {info.totalWatchedCount} / {d.number_of_episodes || "?"} bolum · %{info.progressPercentage}
+                            {info.totalWatchedCount} / {d.number_of_episodes || "?"} bölüm · %{info.progressPercentage}
                         </div>
                     </div>
 
@@ -361,7 +361,7 @@ function SeriesCardView({ info, activeTab, rating }: { info: SeriesProgressInfo;
                         </div>
                         <div className="flex items-center gap-1.5 text-[11px] text-text-dim">
                             <Clock size={12} />
-                            <span>{totalRuntimeHours} saat, {d.number_of_episodes} bolum</span>
+                            <span>{totalRuntimeHours} saat, {d.number_of_episodes} bölüm</span>
                         </div>
                         {rating && (
                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-warn mt-0.5">

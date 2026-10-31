@@ -258,7 +258,7 @@ export default function KesifPage(): React.ReactElement {
 
                     {/* Genres */}
                     <div className="space-y-2">
-                        <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[1.5px]">Turler</h3>
+                        <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[1.5px]">Türler</h3>
                         <div className="grid grid-cols-2 gap-1.5">
                             {GENRE_ENTRIES.map(genre => {
                                 const isSelected = draftFilters.genreIds?.includes(genre.id);
@@ -284,7 +284,7 @@ export default function KesifPage(): React.ReactElement {
 
                     {/* Year Range */}
                     <div className="space-y-2">
-                        <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[1.5px]">Yil Araligi</h3>
+                        <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[1.5px]">Yıl Aralığı</h3>
                         <div className="flex items-center gap-2">
                             <input
                                 type="number" min="1900" max="2030" placeholder="1950"
@@ -306,7 +306,7 @@ export default function KesifPage(): React.ReactElement {
                     <div className="space-y-2">
                         <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[1.5px]">Puan</h3>
                         <div className="flex flex-wrap gap-1.5">
-                            <button onClick={() => handleRatingPill(0)} className={pillCn(ratingPill === 0)}>Tumu</button>
+                            <button onClick={() => handleRatingPill(0)} className={pillCn(ratingPill === 0)}>Tümü</button>
                             <button onClick={() => handleRatingPill(7)} className={pillCn(ratingPill === 7)}>7.0+</button>
                             <button onClick={() => handleRatingPill(8)} className={pillCn(ratingPill === 8)}>8.0+</button>
                         </div>
@@ -315,9 +315,9 @@ export default function KesifPage(): React.ReactElement {
                     {/* Duration (movie only) */}
                     {contentType === "movie" && (
                         <div className="space-y-2">
-                            <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[1.5px]">Sure</h3>
+                            <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[1.5px]">Süre</h3>
                             <div className="flex flex-wrap gap-1.5">
-                                <button onClick={() => handleDurationPill("all")} className={pillCn(durationPill === "all")}>Tumu</button>
+                                <button onClick={() => handleDurationPill("all")} className={pillCn(durationPill === "all")}>Tümü</button>
                                 <button onClick={() => handleDurationPill("short")} className={pillCn(durationPill === "short")}>Kisa</button>
                                 <button onClick={() => handleDurationPill("normal")} className={pillCn(durationPill === "normal")}>Normal</button>
                                 <button onClick={() => handleDurationPill("long")} className={pillCn(durationPill === "long")}>Uzun</button>
@@ -328,16 +328,16 @@ export default function KesifPage(): React.ReactElement {
                     {/* Sort & Language */}
                     <div className="space-y-3">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-semibold text-text-muted uppercase tracking-[1.5px]">Siralama</label>
+                            <label className="text-[10px] font-semibold text-text-muted uppercase tracking-[1.5px]">Sıralama</label>
                             <select
                                 className="w-full bg-overlay border border-border-dim rounded-lg p-2.5 text-[12px] text-text-sec outline-none focus:border-purple-500 cursor-pointer"
                                 value={draftFilters.sortBy}
                                 onChange={(e) => setDraftFilters(prev => ({ ...prev, sortBy: e.target.value as DiscoverFilters['sortBy'] }))}
                             >
-                                <option value="popularity">Populerlige Gore</option>
-                                <option value="rating">Puana Gore</option>
-                                <option value="release_date">Tarihe Gore</option>
-                                {contentType === "movie" && <option value="revenue">Hasilat</option>}
+                                <option value="popularity">Popülerliğe Göre</option>
+                                <option value="rating">Puana Göre</option>
+                                <option value="release_date">Tarihe Göre</option>
+                                {contentType === "movie" && <option value="revenue">Hasılat</option>}
                             </select>
                         </div>
                         <div className="space-y-1.5">
@@ -347,7 +347,7 @@ export default function KesifPage(): React.ReactElement {
                                 value={draftFilters.language || ""}
                                 onChange={(e) => setDraftFilters(prev => ({ ...prev, language: e.target.value }))}
                             >
-                                <option value="">Tum Diller</option>
+                                <option value="">Tüm Diller</option>
                                 <option value="tr">Turkce</option>
                                 <option value="en">Ingilizce</option>
                                 <option value="ko">Korece</option>
@@ -364,7 +364,7 @@ export default function KesifPage(): React.ReactElement {
                             Filtrele
                         </Button>
                         <Button variant="ghost" className="w-full justify-center" onClick={handleResetFilters}>
-                            Sifirla
+                            Sıfırla
                         </Button>
                     </div>
                 </div>
@@ -378,7 +378,7 @@ export default function KesifPage(): React.ReactElement {
                         <span className="font-mono text-text-sec mr-1">
                             {new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(totalResults)}
                         </span>
-                        sonuc
+                        sonuç
                     </p>
                     <div className="flex items-center gap-1 bg-overlay p-0.5 rounded-lg">
                         <button
@@ -404,9 +404,9 @@ export default function KesifPage(): React.ReactElement {
                 ) : results.length === 0 ? (
                     <EmptyState
                         icon={Search}
-                        title="Sonuc Bulunamadi"
+                        title="Sonuç Bulunamadı"
                         description="Farkli filtreler denemeyi dusunebilirsiniz."
-                        action={{ label: "Filtreleri Sifirla", onClick: handleResetFilters }}
+                        action={{ label: "Filtreleri Sıfırla", onClick: handleResetFilters }}
                     />
                 ) : (
                     <div className={`grid gap-3 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 xl:grid-cols-2"}`}>
@@ -487,7 +487,7 @@ export default function KesifPage(): React.ReactElement {
                         {loadingMore && (
                             <div className="flex flex-col items-center gap-3">
                                 <RefreshCcw className="w-5 h-5 text-purple-400 animate-spin" />
-                                <span className="text-[11px] text-text-muted">Yukleniyor...</span>
+                                <span className="text-[11px] text-text-muted">Yükleniyor...</span>
                             </div>
                         )}
                         {!loadingMore && filters.page && filters.page * 20 < totalResults && (

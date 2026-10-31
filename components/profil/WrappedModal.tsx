@@ -100,7 +100,7 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
                             {new Date().getFullYear()} yilinda sinemada nasil bir iz biraktigina bakalim...
                         </p>
                         <p className="text-sm text-white/50 mt-10 animate-pulse flex items-center justify-center gap-2">
-                            Devam etmek icin ekrana tikla
+                            Devam etmek için ekrana tıkla
                             <ChevronRight size={16} />
                         </p>
                     </div>
@@ -113,7 +113,7 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
                             <span className="text-2xl text-white/80">+</span>
                             <Tv2 size={32} className="text-[#22C55E]" />
                         </div>
-                        <p className="text-2xl text-white/80">Bu yil tam</p>
+                        <p className="text-2xl text-white/80">Bu yıl tam</p>
                         <h2 className="text-6xl md:text-8xl font-black text-purple drop-shadow-lg font-display">{stats.totalMovies}</h2>
                         <p className="text-3xl font-bold text-white">Film</p>
                         <p className="text-xl text-white/60">ve</p>
@@ -140,14 +140,14 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
                         <div className="w-20 h-20 rounded-full bg-[#F59E0B]/20 flex items-center justify-center mx-auto">
                             <Award size={40} className="text-[#F59E0B]" />
                         </div>
-                        <p className="text-2xl text-white/80">En cok yoneldigin tur:</p>
+                        <p className="text-2xl text-white/80">En çok yöneldiğin tür:</p>
                         <h2 className="text-5xl md:text-7xl font-black text-[#F59E0B] drop-shadow-lg font-display">{stats.topGenre || "Belirsiz"}</h2>
                         {stats.topActor && (
                             <>
                                 <div className="flex items-center justify-center gap-2 mt-8">
                                     <Users size={24} className="text-purple" />
                                 </div>
-                                <p className="text-xl text-white/80">Ve ekranda en cok gordugn kisi:</p>
+                                <p className="text-xl text-white/80">Ve ekranda en çok gördüğün kişi:</p>
                                 <h2 className="text-4xl md:text-5xl font-bold text-white drop-shadow-md font-display">{stats.topActor}</h2>
                             </>
                         )}
@@ -156,7 +156,7 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
             case 4:
                 return (
                     <div className="text-center space-y-6 animate-slide-up">
-                        <p className="text-2xl text-white/80">Tum bunlara bakildiginda...</p>
+                        <p className="text-2xl text-white/80">Tüm bunlara bakıldığında...</p>
                         <p className="text-2xl text-white/80">Senin sinema kimligin:</p>
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple to-purple-light flex items-center justify-center mx-auto my-6 animate-bounce">
                             <Clapperboard size={48} className="text-white" />
@@ -192,20 +192,20 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
                                 <div>
                                     <div className="flex items-center gap-1.5 mb-1">
                                         <Clock size={14} className="text-purple" />
-                                        <p className="text-xs text-text-secondary uppercase">Sure (Saat)</p>
+                                        <p className="text-xs text-text-secondary uppercase">Süre (Saat)</p>
                                     </div>
                                     <p className="text-2xl font-bold text-purple font-display">{stats.totalHours}</p>
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-1.5 mb-1">
                                         <Award size={14} className="text-[#F59E0B]" />
-                                        <p className="text-xs text-text-secondary uppercase">Favori Tur</p>
+                                        <p className="text-xs text-text-secondary uppercase">Favori Tür</p>
                                     </div>
                                     <p className="text-xl font-bold text-white">{stats.topGenre || "Belirsiz"}</p>
                                 </div>
                             </div>
                             <div className="pt-6 border-t border-[#2A2A35] mt-6">
-                                <p className="text-xs text-text-secondary uppercase mb-1">Sinema Kimligi</p>
+                                <p className="text-xs text-text-secondary uppercase mb-1">Sinema Kimliği</p>
                                 <p className="text-2xl font-black text-purple flex items-center justify-center gap-2 font-display">
                                     <Sparkles size={20} />
                                     {stats.personalityLabel}
@@ -226,7 +226,7 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
                                 ) : (
                                     <>
                                         <Download size={18} />
-                                        <span>PNG Olarak Indir</span>
+                                        <span>PNG Olarak İndir</span>
                                     </>
                                 )}
                             </button>
@@ -234,7 +234,7 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
                                 onClick={(e) => { e.stopPropagation(); onClose(); }}
                                 className="flex-1 py-3.5 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors"
                             >
-                                Ana Ekrana Don
+                                Ana Ekrana Dön
                             </button>
                         </div>
                     </div>

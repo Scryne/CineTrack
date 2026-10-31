@@ -126,7 +126,7 @@ export default function ShareCardModal({
 
                         {/* Middle: Cinema Identity */}
                         <div className="relative z-10 text-center my-auto">
-                            <h3 className="text-4xl text-gray-400 uppercase tracking-widest mb-6 font-semibold">Senin Sinema Kimligin</h3>
+                            <h3 className="text-4xl text-gray-400 uppercase tracking-widest mb-6 font-semibold">Senin Sinema Kimliğin</h3>
                             <div className="mb-8 flex justify-center"><Sparkles size={72} className="text-purple" /></div>
                             <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple to-[#F59E0B] drop-shadow-xl p-4">
                                 {stats.personalityLabel}
@@ -136,15 +136,15 @@ export default function ShareCardModal({
                         {/* Bottom: Stats */}
                         <div className="relative z-10 grid grid-cols-3 gap-8 p-10 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/20">
                             <div className="text-center">
-                                <p className="text-3xl text-gray-400 uppercase font-bold tracking-wider mb-2">Izlenen Film</p>
+                                <p className="text-3xl text-gray-400 uppercase font-bold tracking-wider mb-2">İzlenen Film</p>
                                 <p className="text-7xl font-black text-white">{stats.totalMovies}</p>
                             </div>
                             <div className="text-center border-l border-r border-white/10">
-                                <p className="text-3xl text-gray-400 uppercase font-bold tracking-wider mb-2">Izlenen Dizi</p>
+                                <p className="text-3xl text-gray-400 uppercase font-bold tracking-wider mb-2">İzlenen Dizi</p>
                                 <p className="text-7xl font-black text-white">{stats.totalSeries}</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-3xl text-gray-400 uppercase font-bold tracking-wider mb-2">Toplam Sure</p>
+                                <p className="text-3xl text-gray-400 uppercase font-bold tracking-wider mb-2">Toplam Süre</p>
                                 <p className="text-7xl font-black text-purple">{stats.totalHours} <span className="text-4xl text-white">sa</span></p>
                             </div>
                         </div>
@@ -186,7 +186,7 @@ export default function ShareCardModal({
                     </div>
 
                     <div className="relative z-10 text-center my-4">
-                        <h3 className="text-xs text-gray-400 uppercase tracking-widest mb-2">Sinema Kimligin</h3>
+                        <h3 className="text-xs text-gray-400 uppercase tracking-widest mb-2">Sinema Kimliğin</h3>
                         <div className="flex justify-center"><Sparkles size={32} className="text-purple" /></div>
                         <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple to-[#F59E0B]">
                             {stats.personalityLabel}
@@ -223,7 +223,7 @@ export default function ShareCardModal({
                     ) : (
                         <>
                             <Download size={18} />
-                            <span>Gorsel Olarak Indir</span>
+                            <span>Görsel Olarak İndir</span>
                         </>
                     )}
                 </button>

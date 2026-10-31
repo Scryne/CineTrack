@@ -658,7 +658,7 @@ export default function SeriesDetailPage() {
          ========================================== */}
             <section className="px-4 sm:px-6 lg:px-8" style={{ paddingTop: "40px", paddingBottom: "40px" }}>
                 <div className="max-w-7xl mx-auto">
-                    <h2 className="font-display text-2xl font-bold text-white mb-4">Hikaye</h2>
+                    <h2 className="font-display text-2xl font-bold text-white mb-4">Hikâye</h2>
                     {series.overview ? (
                         <p className="text-text-sec leading-relaxed max-w-3xl text-base">
                             {series.overview}

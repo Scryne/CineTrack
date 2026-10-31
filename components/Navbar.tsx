@@ -34,7 +34,7 @@ const navLinks = [
     { href: "/koleksiyon", label: "Koleksiyon", icon: Library },
     { href: "/dizilerim", label: "Dizilerim", icon: Tv2 },
     { href: "/kesif", label: "Keşfet", icon: Compass },
-    { href: "/gecmis", label: "Gecmis", icon: History },
+    { href: "/gecmis", label: "Geçmiş", icon: History },
 ];
 
 export default function Navbar(): React.ReactElement | null {
@@ -294,7 +294,7 @@ export default function Navbar(): React.ReactElement | null {
                         <Link href="/auth">
                             <button className="h-8 px-4 rounded-lg bg-purple-500 text-white text-[13px] font-medium hover:bg-purple-400 transition-colors hidden sm:flex items-center gap-1.5 shadow-glow-sm">
                                 <LogIn size={14} />
-                                Giris Yap
+                                Giriş Yap
                             </button>
                             <button className="sm:hidden w-8 h-8 rounded-lg bg-purple-500 text-white flex items-center justify-center hover:bg-purple-400 transition-colors">
                                 <LogIn size={14} />
@@ -351,7 +351,7 @@ export default function Navbar(): React.ReactElement | null {
 
                                     {!isSearching && searchResults.length === 0 && searchQuery.length >= 2 && (
                                         <div className="px-4 py-6 text-center text-text-sec text-sm">
-                                            Sonuc bulunamadi
+                                            Sonuç bulunamadı
                                         </div>
                                     )}
 
@@ -551,7 +551,7 @@ export default function Navbar(): React.ReactElement | null {
                                                 )}
                                             >
                                                 <LogIn size={18} />
-                                                Giris Yap
+                                                Giriş Yap
                                             </Link>
                                         )
                                     )}

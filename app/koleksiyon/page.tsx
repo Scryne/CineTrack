@@ -29,7 +29,7 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import { cn, startLoad } from "@/lib/utils";
 
 const TABS = [
-    { id: "watchlist", label: "Izleme Listem", icon: Bookmark },
+    { id: "watchlist", label: "İzleme listem", icon: Bookmark },
     { id: "watched", label: "Izlediklerim", icon: CheckCircle2 },
 ] as const;
 
@@ -63,7 +63,7 @@ function SeriesMiniProgress({ seriesId }: { seriesId: string }): React.ReactElem
     return (
         <div className="mt-1.5" onClick={(e) => e.preventDefault()}>
             <div className="flex items-center justify-between text-[10px] text-text-muted mb-1 font-medium">
-                <span>{watchedEps} / {totalEps} bolum</span>
+                <span>{watchedEps} / {totalEps} bölüm</span>
                 <span>{progress}%</span>
             </div>
             <ProgressBar value={progress} color="purple" size="sm" />
@@ -152,7 +152,7 @@ export default function KoleksiyonPage(): React.ReactElement {
     const renderContent = (): React.ReactElement | null => {
         if (activeTab === "watchlist") {
             if (filteredWatchlist.length === 0) {
-                return <EmptyState icon={Bookmark} title="Izleme listeniz bos" description="Izlemek istediginiz film ve dizileri koleksiyonunuza ekleyerek burada takip edebilirsiniz." action={{ label: "Kesfetmeye Basla", href: "/kesif" }} />;
+                return <EmptyState icon={Bookmark} title="İzleme listen boş" description="İzlemek istediğin film ve dizileri koleksiyonuna ekle, burada takip et." action={{ label: "Kesfetmeye Basla", href: "/kesif" }} />;
             }
             return (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -208,7 +208,7 @@ export default function KoleksiyonPage(): React.ReactElement {
                                         <div className="absolute inset-0 bg-gradient-to-t from-void via-void/20 to-transparent opacity-80" />
 
                                         <div className="absolute top-2 left-2 flex gap-1.5">
-                                            <Badge variant="success" className="text-[10px]">Izlendi</Badge>
+                                            <Badge variant="success" className="text-[10px]">İzlendi</Badge>
                                         </div>
 
                                         <button
@@ -299,7 +299,7 @@ export default function KoleksiyonPage(): React.ReactElement {
                         >
                             {f === "film" && <Film size={12} />}
                             {f === "dizi" && <Tv size={12} />}
-                            {f === "all" ? "Tumu" : f === "film" ? "Film" : "Dizi"}
+                            {f === "all" ? "Tümü" : f === "film" ? "Film" : "Dizi"}
                         </button>
                     ))}
 
@@ -316,7 +316,7 @@ export default function KoleksiyonPage(): React.ReactElement {
                             className="appearance-none bg-overlay border border-border-dim hover:border-border-bright rounded-lg h-9 pl-3 pr-8 text-[12px] text-white outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer transition-all"
                         >
                             <option value="date">Eklenme Tarihi</option>
-                            <option value="name">Ada Gore (A-Z)</option>
+                            <option value="name">Ada Göre (A-Z)</option>
                         </select>
                         <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
                     </div>

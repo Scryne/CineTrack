@@ -260,7 +260,7 @@ export default function ProfilPage(): React.ReactElement {
             const updated = { ...profile, username: trimmed };
             setProfile(updated);
             await saveUserProfile(updated);
-            toast.success("Kullanici adi guncellendi.");
+            toast.success("Kullanıcı adı güncellendi.");
         }
         else { setTempUsername(profile.username || ""); }
         setIsEditingUsername(false);
@@ -271,7 +271,7 @@ export default function ProfilPage(): React.ReactElement {
         setProfile(updated);
         await saveUserProfile(updated);
         setShowAvatarModal(false);
-        toast.success("Avatar guncellendi.");
+        toast.success("Avatar güncellendi.");
     };
 
     const handleToggleNotifications = async (): Promise<void> => {
@@ -440,7 +440,7 @@ export default function ProfilPage(): React.ReactElement {
                                 <BarChart3 size={16} className="text-purple-400" />
                                 Sinema Zevkin
                             </h2>
-                            <p className="text-[11px] text-text-dim mt-0.5">Son izlenenlere gore</p>
+                            <p className="text-[11px] text-text-dim mt-0.5">Son izlenenlere göre</p>
                         </div>
                     </div>
 
@@ -520,7 +520,7 @@ export default function ProfilPage(): React.ReactElement {
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-center py-6 border border-dashed border-border-dim rounded-xl">
                             <Eye size={28} className="mb-3 opacity-40" />
-                            <Link href="/kesif" className="text-purple-400 hover:underline text-[12px] font-medium">Kesfet</Link>
+                            <Link href="/kesif" className="text-purple-400 hover:underline text-[12px] font-medium">Keşfet</Link>
                         </div>
                     )}
                 </div>
@@ -548,7 +548,7 @@ export default function ProfilPage(): React.ReactElement {
                 </div>
             </Modal>
 
-            <Modal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} title="Hesap Ayarlari">
+            <Modal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} title="Hesap Ayarları">
                 <div className="space-y-3">
                     <div className="bg-overlay border border-border-dim rounded-xl p-4 hover:bg-subtle transition-colors">
                         <div className="flex items-center justify-between">
@@ -557,7 +557,7 @@ export default function ProfilPage(): React.ReactElement {
                                     {notifSettings.enabled ? <Bell size={18} /> : <BellOff size={18} />}
                                 </div>
                                 <div>
-                                    <p className="text-[13px] font-semibold text-white">Izleme Hatirlaticisi</p>
+                                    <p className="text-[13px] font-semibold text-white">İzleme Hatırlatıcısı</p>
                                     <p className="text-[11px] text-text-dim">Gunu kacirma</p>
                                 </div>
                             </div>
