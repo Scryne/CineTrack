@@ -299,10 +299,10 @@ export default function SeriesDetailPage({
         },
     ].filter((r) => r.show);
 
-    // İzleme linki hesapla
-    const watchLink = progress
-        ? `/izle/dizi/${params.id}/${progress.season}/${progress.episode}`
-        : `/izle/dizi/${params.id}/1/1`;
+    // Bölüm takibi sezon sayfasında yapılır; "devam et" kaldığın sezonu açar.
+    const watchLink = progress?.season
+        ? `/dizi/${params.id}/sezon/${progress.season}`
+        : `/dizi/${params.id}/sezon/1`;
 
     const hasProviders = providers && (providers.flatrate?.length || providers.rent?.length || providers.buy?.length);
 
@@ -474,7 +474,7 @@ export default function SeriesDetailPage({
                                                 <PlayCircle size={22} className="group-hover:scale-110 transition-transform" />
                                                 <div className="text-left">
                                                     <span className="block text-sm font-bold">
-                                                        S{progress.season}E{progress.episode}&apos;den Devam Et
+                                                        {progress.season}. sezon {progress.episode}. bölümden devam et
                                                     </span>
                                                     {progress.episodeTitle && (
                                                         <span className="block text-[11px] text-white/70 font-normal truncate max-w-[180px]">
@@ -486,7 +486,7 @@ export default function SeriesDetailPage({
                                         ) : (
                                             <>
                                                 <Play size={22} fill="white" className="group-hover:scale-110 transition-transform" />
-                                                <span className="text-base">İzlemeye Başla</span>
+                                                <span className="text-base">Bölümleri takip et</span>
                                             </>
                                         )}
                                     </button>
@@ -530,12 +530,12 @@ export default function SeriesDetailPage({
             {/* ==========================================
           PLATFORMLARDA İZLE
          ========================================== */}
-            {hasProviders && (
-                <section className="px-4 sm:px-6 lg:px-8" style={{ paddingTop: "20px", paddingBottom: "40px" }}>
+            {hasProviders ? (
+                <section id="nerede-izlenir" className="scroll-mt-24 px-4 sm:px-6 lg:px-8" style={{ paddingTop: "20px", paddingBottom: "40px" }}>
                     <div className="max-w-7xl mx-auto">
                         <div className="flex items-center gap-2 mb-5">
                             <MonitorPlay size={22} className="text-purple-500" />
-                            <h2 className="font-display text-2xl font-bold text-white">Platformlarda İzle</h2>
+                            <h2 className="font-display text-2xl font-bold text-white">Türkiye&apos;de nerede izlenir</h2>
                         </div>
 
                         <div className="flex flex-col gap-6">
@@ -622,10 +622,19 @@ export default function SeriesDetailPage({
                                     className="inline-flex items-center gap-2 text-sm text-purple-500 hover:text-purple-500-light transition-colors"
                                 >
                                     <ExternalLink size={14} />
-                                    Tüm platformları gör (JustWatch)
+                                    Tüm seçenekler (JustWatch, TMDB üzerinden)
                                 </a>
                             )}
                         </div>
+                    </div>
+                </section>
+            ) : (
+                <section id="nerede-izlenir" className="scroll-mt-24 px-4 sm:px-6 lg:px-8" style={{ paddingTop: "20px", paddingBottom: "40px" }}>
+                    <div className="max-w-7xl mx-auto rounded-xl border border-border-dim bg-overlay p-5">
+                        <h2 className="font-display text-xl font-bold text-white">Türkiye&apos;de nerede izlenir</h2>
+                        <p className="mt-1 text-sm text-text-sec">
+                            Bu yapım için Türkiye&apos;de abonelik, kiralama ya da satın alma bilgisi yok. Kaynak: JustWatch, TMDB üzerinden.
+                        </p>
                     </div>
                 </section>
             )}

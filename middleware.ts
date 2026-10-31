@@ -58,7 +58,7 @@ export async function middleware(req: NextRequest) {
     const protectedRoutes = [
         '/koleksiyon', '/dizilerim', '/gecmis',
         '/profil', '/oneriler',
-        '/listeler', '/izle'
+        '/listeler'
     ]
 
     // Check if the route requires authentication

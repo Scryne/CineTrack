@@ -173,7 +173,6 @@ export default function Navbar(): React.ReactElement | null {
     const username = user?.user_metadata?.username || user?.email?.split('@')[0] || "U";
     const initial = typeof username === 'string' ? username.charAt(0).toUpperCase() : "U";
 
-    if (pathname && pathname.startsWith("/izle/")) return null;
 
     return (
         <nav

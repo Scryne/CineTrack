@@ -32,8 +32,13 @@ interface OMDBResponse {
 // ==========================================
 
 /** IMDb, Rotten Tomatoes ve Metacritic puanlarını getir */
+// Geçersiz ya da süresi dolmuş anahtar (401) bir oturumda bir kez bildirilir; sonra OMDB hiç
+// çağrılmaz. Puan kutusu bu durumda yalnız TMDB puanını gösterir — her sayfada konsol hatası
+// ve boşa istek yerine.
+let omdbDisabled = false;
+
 export async function getRatings(imdbId: string): Promise<OMDBRatings | null> {
-    if (!imdbId || !OMDB_KEY) return null;
+    if (!imdbId || !OMDB_KEY || omdbDisabled) return null;
 
     try {
         const params = new URLSearchParams({
@@ -43,6 +48,11 @@ export async function getRatings(imdbId: string): Promise<OMDBRatings | null> {
 
         const res = await fetch(`${BASE_URL}?${params.toString()}`);
 
+        if (res.status === 401) {
+            omdbDisabled = true;
+            logger.warn('OMDB anahtarı geçersiz; IMDb/Rotten Tomatoes puanları bu oturumda gösterilmeyecek.');
+            return null;
+        }
         if (!res.ok) {
             logger.error(`OMDB API hatası: ${res.status} ${res.statusText}`);
             return null;

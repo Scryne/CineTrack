@@ -46,6 +46,7 @@ import {
 } from "@/lib/db";
 import type { WatchProgress } from "@/types/player";
 import { cn } from "@/lib/utils";
+import { watchHref } from "@/lib/links";
 
 // ==========================================
 // Genre data
@@ -367,10 +368,10 @@ export default function Home(): React.ReactElement {
               variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
               className="flex gap-3 mt-6"
             >
-              <Link href={`/izle/film/${heroItem.id}`}>
+              <Link href={watchHref("film", heroItem.id)}>
                 <button className="flex items-center gap-2 bg-white text-black rounded-lg h-11 px-6 text-[14px] font-semibold hover:bg-white/90 transition-colors">
                   <PlayCircle size={16} />
-                  Simdi Izle
+                  Nerede izlenir
                 </button>
               </Link>
               <Link href={`/film/${heroItem.id}`}>
@@ -420,7 +421,7 @@ export default function Home(): React.ReactElement {
               {continueItems.map((item) => (
                 <Link
                   key={`${item.type}-${item.tmdbId}`}
-                  href={`/izle/${item.type}/${item.tmdbId}${item.type === "dizi" ? `/${item.season}/${item.episode}` : ""}`}
+                  href={watchHref(item.type, item.tmdbId, item.season)}
                   className="flex-shrink-0 group"
                 >
                   <div className="relative w-72 h-44 rounded-xl overflow-hidden bg-raised border border-border-dim group-hover:border-purple-500/60 group-hover:shadow-card-up transition-all duration-300">

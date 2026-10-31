@@ -13,6 +13,7 @@ import Modal from "@/components/ui/Modal";
 import EmptyState from "@/components/ui/EmptyState";
 import ProgressBar from "@/components/ui/ProgressBar";
 import toast from "react-hot-toast";
+import { watchHref } from "@/lib/links";
 
 export default function HistoryPage(): React.ReactElement {
     const [history, setHistory] = useState<WatchProgress[]>([]);
@@ -139,7 +140,7 @@ export default function HistoryPage(): React.ReactElement {
                                             className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-raised border border-border-dim hover:border-border-bright rounded-xl p-3 transition-all"
                                         >
                                             <Link
-                                                href={`/izle/${item.type}/${item.tmdbId}${item.type === "dizi" ? `/${item.season}/${item.episode}` : ""}`}
+                                                href={watchHref(item.type, item.tmdbId, item.season)}
                                                 className="block flex-shrink-0 w-full sm:w-20 h-[120px] sm:h-[120px] relative rounded-lg overflow-hidden"
                                             >
                                                 <Image
@@ -185,7 +186,7 @@ export default function HistoryPage(): React.ReactElement {
                                             </div>
 
                                             <div className="absolute top-3 right-3 sm:static sm:top-0 sm:right-0 flex sm:flex-col items-center gap-2">
-                                                <Link href={`/izle/${item.type}/${item.tmdbId}${item.type === "dizi" ? `/${item.season}/${item.episode}` : ""}`}>
+                                                <Link href={watchHref(item.type, item.tmdbId, item.season)}>
                                                     <Button variant="primary" className="hidden sm:flex" size="sm" icon={PlayCircle}>
                                                         Devam Et
                                                     </Button>
@@ -199,7 +200,7 @@ export default function HistoryPage(): React.ReactElement {
                                                 </button>
                                             </div>
                                             <div className="w-full sm:hidden border-t border-border-dim pt-3 mt-1">
-                                                <Link href={`/izle/${item.type}/${item.tmdbId}${item.type === "dizi" ? `/${item.season}/${item.episode}` : ""}`} className="w-full">
+                                                <Link href={watchHref(item.type, item.tmdbId, item.season)} className="w-full">
                                                     <Button variant="secondary" className="w-full justify-center" size="sm">
                                                         Izlemeye Devam Et
                                                     </Button>
