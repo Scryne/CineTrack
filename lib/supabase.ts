@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createBrowserClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
 import type { Database as DatabaseType } from './database.types'
 import { isLocalMode } from './dataMode'
 import { createLocalClient } from './localClient'

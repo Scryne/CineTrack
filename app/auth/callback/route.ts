@@ -1,36 +1,28 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createServerClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { isLocalMode } from "@/lib/dataMode";
 
 export async function GET(request: Request) {
     const requestUrl = new URL(request.url);
     const code = requestUrl.searchParams.get("code");
 
-    if (code) {
-        const cookieStore = cookies();
-
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
+    // Yerel modda OAuth yok; geri dönüş adresi doğrudan ana sayfaya gider.
+    if (code && !isLocalMode) {
+        // Next 16: cookies() asenkron.
+        const cookieStore = await cookies();
         const supabase = createServerClient(
-            supabaseUrl,
-            supabaseAnonKey,
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
                 cookies: {
-                    get(name: string) {
-                        return cookieStore.get(name)?.value
-                    },
-                    set(name: string, value: string, options: any) {
-                        cookieStore.set({ name, value, ...options })
-                    },
-                    remove(name: string, options: any) {
-                        cookieStore.set({ name, value: '', ...options })
+                    getAll: () => cookieStore.getAll(),
+                    setAll: (toSet) => {
+                        for (const { name, value, options } of toSet) cookieStore.set(name, value, options);
                     },
                 },
             }
         );
-
         await supabase.auth.exchangeCodeForSession(code);
     }
 

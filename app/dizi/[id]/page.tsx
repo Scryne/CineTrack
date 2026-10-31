@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { logger } from "@/lib/logger";
@@ -125,11 +125,8 @@ function SeasonCard({ season, seriesId }: { season: TMDBSeasonSummary, seriesId:
     );
 }
 
-export default function SeriesDetailPage({
-    params,
-}: {
-    params: { id: string };
-}) {
+export default function SeriesDetailPage() {
+    const params = useParams<{ id: string }>();
     const router = useRouter();
     const [series, setSeries] = useState<TMDBSeriesDetail | null>(null);
     const [ratings, setRatings] = useState<OMDBRatings | null>(null);
@@ -450,8 +447,8 @@ export default function SeriesDetailPage({
                             )}
 
                             {/* Benim Puanım */}
-                            <div className="flex items-center gap-4">
-                                <span className="text-text-sec text-sm">Benim Puanım:</span>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                                <span className="text-text-sec text-sm">Benim puanım</span>
                                 <RatingPicker
                                     id={params.id}
                                     type="dizi"

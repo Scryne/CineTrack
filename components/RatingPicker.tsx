@@ -71,7 +71,7 @@ export default function RatingPicker({ id, type, title, posterPath, onRatingChan
     return (
         <div className="flex flex-col gap-3">
             {/* Yıldız Seçici */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
                 {Array.from({ length: 10 }, (_, i) => i + 1).map((star) => {
                     const isActive = displayRating !== null && star <= displayRating;
                     const isHovered = hoverRating !== null && star <= hoverRating;
@@ -82,11 +82,11 @@ export default function RatingPicker({ id, type, title, posterPath, onRatingChan
                             onClick={() => handleRate(star)}
                             onMouseEnter={() => setHoverRating(star)}
                             onMouseLeave={() => setHoverRating(null)}
-                            className="relative p-0.5 transition-transform duration-200 ease-out hover:scale-[1.35] focus:outline-none"
+                            className="relative rounded p-0.5 transition-transform duration-200 ease-out hover:scale-[1.35] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
                             aria-label={`${star} puan ver`}
                         >
                             <svg
-                                className={`w-7 h-7 sm:w-8 sm:h-8 transition-colors duration-200 ${isActive
+                                className={`w-6 h-6 sm:w-8 sm:h-8 transition-colors duration-200 ${isActive
                                     ? "text-[#f5c518] drop-shadow-[0_0_6px_rgba(245,197,24,0.5)]"
                                     : "text-white/20 hover:text-white/40"
                                     }`}

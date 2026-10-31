@@ -43,7 +43,7 @@ import {
 } from "@/lib/tmdb";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
-import { cn } from "@/lib/utils";
+import { cn, startLoad } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 type ViewMode = "grid" | "list";
@@ -150,9 +150,9 @@ export default function KesifPage(): React.ReactElement {
 
     useEffect(() => {
         if (filters.page && filters.page > 1) {
-            fetchResults(true, filters);
+            startLoad(() => fetchResults(true, filters));
         } else {
-            fetchResults(false, filters);
+            startLoad(() => fetchResults(false, filters));
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }, [filters, fetchResults]);

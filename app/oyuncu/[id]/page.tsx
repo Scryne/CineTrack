@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,11 +9,8 @@ import type { TMDBPersonDetail, TMDBPersonCredit } from "@/lib/tmdb";
 import { Film, Tv, Star, User, Cake, MapPin, Play } from "lucide-react";
 import { watchHref } from "@/lib/links";
 
-export default function ActorDetailPage({
-    params,
-}: {
-    params: { id: string };
-}) {
+export default function ActorDetailPage() {
+    const params = useParams<{ id: string }>();
     const [person, setPerson] = useState<TMDBPersonDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<"movies" | "series">("movies");

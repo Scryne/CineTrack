@@ -4,8 +4,6 @@
 
 import { logger } from './logger'
 
-const BASE_URL = "https://www.omdbapi.com";
-const OMDB_KEY = process.env.NEXT_PUBLIC_OMDB_KEY;
 
 // ==========================================
 // Response Tipi
@@ -18,69 +16,20 @@ export interface OMDBRatings {
     metacritic: string | null;
 }
 
-interface OMDBResponse {
-    Response: "True" | "False";
-    Error?: string;
-    imdbRating?: string;
-    imdbVotes?: string;
-    Ratings?: { Source: string; Value: string }[];
-    Metascore?: string;
-}
-
 // ==========================================
 // API Fonksiyonları
 // ==========================================
 
-/** IMDb, Rotten Tomatoes ve Metacritic puanlarını getir */
-// Geçersiz ya da süresi dolmuş anahtar (401) bir oturumda bir kez bildirilir; sonra OMDB hiç
-// çağrılmaz. Puan kutusu bu durumda yalnız TMDB puanını gösterir — her sayfada konsol hatası
-// ve boşa istek yerine.
-let omdbDisabled = false;
-
+/** IMDb, Rotten Tomatoes ve Metacritic puanları. Çağrı sunucu rotasından geçer (app/api/omdb). */
 export async function getRatings(imdbId: string): Promise<OMDBRatings | null> {
-    if (!imdbId || !OMDB_KEY || omdbDisabled) return null;
-
+    if (!imdbId) return null;
     try {
-        const params = new URLSearchParams({
-            apikey: OMDB_KEY,
-            i: imdbId,
-        });
-
-        const res = await fetch(`${BASE_URL}?${params.toString()}`);
-
-        if (res.status === 401) {
-            omdbDisabled = true;
-            logger.warn('OMDB anahtarı geçersiz; IMDb/Rotten Tomatoes puanları bu oturumda gösterilmeyecek.');
-            return null;
-        }
-        if (!res.ok) {
-            logger.error(`OMDB API hatası: ${res.status} ${res.statusText}`);
-            return null;
-        }
-
-        const data: OMDBResponse = await res.json();
-
-        if (data.Response === "False") {
-            logger.error('OMDB API yanıt hatası', data.Error);
-            return null;
-        }
-
-        // Rotten Tomatoes ve Metacritic puanlarını Ratings dizisinden bul
-        const rtRating = data.Ratings?.find(
-            (r) => r.Source === "Rotten Tomatoes"
-        );
-        const mcRating = data.Ratings?.find(
-            (r) => r.Source === "Metacritic"
-        );
-
-        return {
-            imdbRating: data.imdbRating ?? null,
-            imdbVotes: data.imdbVotes ?? null,
-            rottenTomatoes: rtRating?.Value ?? null,
-            metacritic: mcRating?.Value ?? null,
-        };
+        const res = await fetch(`/api/omdb?i=${encodeURIComponent(imdbId)}`);
+        if (!res.ok) return null;
+        const data = (await res.json()) as { ratings: OMDBRatings | null };
+        return data.ratings;
     } catch (error) {
-        logger.error('OMDB API isteği başarısız', error);
+        logger.error('OMDB puanları alınamadı', error);
         return null;
     }
 }

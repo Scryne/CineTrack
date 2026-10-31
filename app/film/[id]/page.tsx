@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,11 +35,8 @@ import type { TMDBMovieDetail, TMDBCastMember, TMDBVideo } from "@/lib/tmdb";
 import type { TMDBWatchProviders } from "@/lib/tmdb";
 import type { OMDBRatings } from "@/lib/omdb";
 
-export default function FilmDetailPage({
-    params,
-}: {
-    params: { id: string };
-}) {
+export default function FilmDetailPage() {
+    const params = useParams<{ id: string }>();
     const [movie, setMovie] = useState<TMDBMovieDetail | null>(null);
     const [ratings, setRatings] = useState<OMDBRatings | null>(null);
     const [loading, setLoading] = useState(true);
@@ -310,8 +308,8 @@ export default function FilmDetailPage({
                             )}
 
                             {/* Benim Puanım */}
-                            <div className="flex items-center gap-4">
-                                <span className="text-text-sec text-sm">Benim Puanım:</span>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                                <span className="text-text-sec text-sm">Benim puanım</span>
                                 <RatingPicker
                                     id={params.id}
                                     type="film"

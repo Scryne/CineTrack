@@ -69,7 +69,9 @@ export default function Navbar(): React.ReactElement | null {
     }, []);
 
     useEffect(() => {
-        fetchWatchlistCount();
+        let active = true;
+        // Veri çekme sözle: state geri çağrıda ve bileşen hâlâ bağlıysa güncellenir.
+        getWatchlist().then((list) => { if (active) setWatchlistCount(list.length); });
         const handleStorage = (): void => { fetchWatchlistCount(); };
         const handleSupabaseUpdate = (): void => { fetchWatchlistCount(); };
 
@@ -77,19 +79,23 @@ export default function Navbar(): React.ReactElement | null {
         window.addEventListener("cinetrack_supabase_update", handleSupabaseUpdate);
 
         return () => {
+            active = false;
             window.removeEventListener("storage", handleStorage);
             window.removeEventListener("cinetrack_supabase_update", handleSupabaseUpdate);
         };
-    }, [fetchWatchlistCount, user]);
+    }, [fetchWatchlistCount, user, pathname]);
 
-    // --- Update watchlist count + close mobile on route change ---
-    useEffect(() => {
-        fetchWatchlistCount();
+    // --- Rota değişince menü ve arama kapanır ---
+    // Efekt yerine render sırasında: önceki rota saklanır, değişince state bir kez sıfırlanır
+    // (efektte setState her rota değişiminde fazladan bir render zinciri başlatıyordu).
+    const [lastPathname, setLastPathname] = useState(pathname);
+    if (pathname !== lastPathname) {
+        setLastPathname(pathname);
         setIsMobileMenuOpen(false);
         setIsSearchOpen(false);
         setSearchQuery("");
         setSearchResults([]);
-    }, [pathname, fetchWatchlistCount]);
+    }
 
     // --- Focus search input when opening ---
     useEffect(() => {

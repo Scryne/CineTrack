@@ -14,6 +14,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ProgressBar from "@/components/ui/ProgressBar";
 import toast from "react-hot-toast";
 import { watchHref } from "@/lib/links";
+import { startLoad } from "@/lib/utils";
 
 export default function HistoryPage(): React.ReactElement {
     const [history, setHistory] = useState<WatchProgress[]>([]);
@@ -34,8 +35,8 @@ export default function HistoryPage(): React.ReactElement {
     };
 
     useEffect(() => {
-        fetchHistory(0, true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        startLoad(() => fetchHistory(0, true));
+         
     }, []);
 
     const handleLoadMore = (): void => {

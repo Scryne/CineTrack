@@ -24,6 +24,7 @@ import {
 import type { WatchlistItem } from "@/types";
 import { Tv, CalendarDays, Film, Star, Bell, Inbox } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { startLoad } from "@/lib/utils";
 
 // ==========================================
 // Tipler
@@ -227,7 +228,7 @@ export default function TakvimPage() {
     }, [today]);
 
     useEffect(() => {
-        loadData();
+        startLoad(loadData);
     }, [loadData]);
 
     // ==========================================
@@ -240,7 +241,8 @@ export default function TakvimPage() {
 
         // İzin durumunu kontrol et
         if (typeof Notification !== "undefined") {
-            setNotifPermission(Notification.permission);
+            const permission = Notification.permission;
+            startLoad(() => setNotifPermission(permission));
             if (Notification.permission === "default") {
                 // İlk açılışta nazik modal göster
                 const timer = setTimeout(() => setShowNotifModal(true), 2000);

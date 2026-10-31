@@ -106,7 +106,8 @@ function AnimatedCounter({ value, suffix = "", className = "" }: { value: number
     const numValue = isNumeric ? parsedValue : 0;
 
     useEffect(() => {
-        if (numValue === 0) { setDisplayValue(0); return; }
+        // 0 için animasyon yok; gösterilen değer aşağıda doğrudan 0'dır (efektte setState gerekmez).
+        if (numValue === 0) return;
         const duration = 800;
         const steps = 30;
         const increment = numValue / steps;
@@ -125,7 +126,7 @@ function AnimatedCounter({ value, suffix = "", className = "" }: { value: number
 
     return (
         <span className={className}>
-            {typeof value === "string" && value.includes(".") ? displayValue.toFixed(1) : displayValue}
+            {numValue === 0 ? 0 : typeof value === "string" && value.includes(".") ? displayValue.toFixed(1) : displayValue}
             {suffix}
         </span>
     );
@@ -161,7 +162,9 @@ export default function ProfilPage(): React.ReactElement {
     const [ratings, setRatings] = useState<RatingItem[]>([]);
     const [totalEpisodes, setTotalEpisodes] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [detailsLoading, setDetailsLoading] = useState(true);
+    const [detailsLoadingRaw, setDetailsLoading] = useState(true);
+    // İzlenen yoksa ayrıntı hesabı hiç başlamaz; "yükleniyor" türetilir, efektte kapatılmaz.
+    const detailsLoading = detailsLoadingRaw && (loading || watched.length > 0);
 
     const [totalRuntime, setTotalRuntime] = useState(0);
     const [topGenres, setTopGenres] = useState<{ name: string; value: number }[]>([]);
@@ -246,8 +249,9 @@ export default function ProfilPage(): React.ReactElement {
     }, [watched, totalEpisodes]);
 
     useEffect(() => {
-        if (!loading && watched.length > 0) fetchRecentTrends();
-        else if (!loading) setDetailsLoading(false);
+        if (loading || watched.length === 0) return;
+        // Ağır hesap ayrı görevde; state güncellemeleri sözün içinde, efekt gövdesinde değil.
+        void Promise.resolve().then(fetchRecentTrends);
     }, [loading, watched, fetchRecentTrends]);
 
     const handleSaveUsername = async (): Promise<void> => {

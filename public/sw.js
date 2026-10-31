@@ -1,5 +1,3 @@
-const CACHE_NAME = 'cinetrack-v1';
-
 self.addEventListener('install', () => {
     self.skipWaiting();
 });

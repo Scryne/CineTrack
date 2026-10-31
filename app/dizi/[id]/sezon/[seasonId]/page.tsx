@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,12 +27,10 @@ import Card from "@/components/ui/Card";
 import ProgressBar from "@/components/ui/ProgressBar";
 import type { TMDBSeasonDetail, TMDBEpisode } from "@/lib/tmdb";
 import confetti from "canvas-confetti";
+import { startLoad } from "@/lib/utils";
 
-export default function SeasonDetailPage({
-    params,
-}: {
-    params: { id: string; seasonId: string };
-}) {
+export default function SeasonDetailPage() {
+    const params = useParams<{ id: string; seasonId: string }>();
     const [season, setSeason] = useState<TMDBSeasonDetail | null>(null);
     const [seriesName, setSeriesName] = useState("");
     const [seriesArt, setSeriesArt] = useState<{ poster: string | null; backdrop: string | null }>({ poster: null, backdrop: null });
@@ -77,7 +76,7 @@ export default function SeasonDetailPage({
     }, [params.id, seasonNumber]);
 
     useEffect(() => {
-        refreshWatchedMap();
+        startLoad(refreshWatchedMap);
     }, [refreshWatchedMap]);
 
     // "Kaldığın yerden devam et": izlenen bölümün ardından gelen bölüm hatırlanır. Eskiden bu

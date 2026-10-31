@@ -26,7 +26,7 @@ import type { WatchlistItem, WatchedItem } from "@/types";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { cn } from "@/lib/utils";
+import { cn, startLoad } from "@/lib/utils";
 
 const TABS = [
     { id: "watchlist", label: "Izleme Listem", icon: Bookmark },
@@ -106,14 +106,14 @@ export default function KoleksiyonPage(): React.ReactElement {
     };
 
     useEffect(() => {
-        reloadData();
+        startLoad(reloadData);
         window.addEventListener("cinetrack_supabase_update", reloadData);
         window.addEventListener("storage", reloadData);
         return () => {
             window.removeEventListener("cinetrack_supabase_update", reloadData);
             window.removeEventListener("storage", reloadData);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, []);
 
     const handleRemoveWatchlist = async (e: React.MouseEvent, id: string, type: "film" | "dizi"): Promise<void> => {

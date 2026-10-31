@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Download, HardDrive, Trash2 } from "lucide-react";
 import { clearLocalData, exportLocalData } from "@/lib/localClient";
 
@@ -10,6 +11,7 @@ import { clearLocalData, exportLocalData } from "@/lib/localClient";
  */
 export default function LocalDataPanel() {
     const [confirming, setConfirming] = useState(false);
+    const router = useRouter();
 
     const download = () => {
         const blob = new Blob([JSON.stringify(exportLocalData(), null, 2)], { type: "application/json" });
@@ -23,7 +25,8 @@ export default function LocalDataPanel() {
 
     const wipe = () => {
         clearLocalData();
-        window.location.assign("/");
+        router.push("/");
+        router.refresh();
     };
 
     return (

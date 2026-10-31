@@ -1,9 +1,10 @@
-import { createServerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { isLocalMode } from '@/lib/dataMode'
 
-export async function middleware(req: NextRequest) {
+// Next 16: middleware dosyası ve fonksiyonu "proxy" adını aldı.
+export async function proxy(req: NextRequest) {
     // Yerel modda hesap yok: her rota açık, giriş sayfası anlamsız.
     if (isLocalMode) {
         if (req.nextUrl.pathname.startsWith('/auth')) return NextResponse.redirect(new URL('/', req.url))
@@ -28,22 +29,11 @@ export async function middleware(req: NextRequest) {
         supabaseAnonKey,
         {
             cookies: {
-                get(name: string) {
-                    return req.cookies.get(name)?.value
-                },
-                set(name: string, value: string, options: Record<string, unknown>) {
-                    req.cookies.set({ name, value, ...options })
-                    res = NextResponse.next({
-                        request: { headers: req.headers },
-                    })
-                    res.cookies.set({ name, value, ...options })
-                },
-                remove(name: string, options: Record<string, unknown>) {
-                    req.cookies.set({ name, value: '', ...options })
-                    res = NextResponse.next({
-                        request: { headers: req.headers },
-                    })
-                    res.cookies.set({ name, value: '', ...options })
+                getAll: () => req.cookies.getAll(),
+                setAll: (toSet) => {
+                    for (const { name, value } of toSet) req.cookies.set(name, value)
+                    res = NextResponse.next({ request: { headers: req.headers } })
+                    for (const { name, value, options } of toSet) res.cookies.set(name, value, options)
                 },
             },
         }
