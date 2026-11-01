@@ -370,7 +370,7 @@ export default function Home(): React.ReactElement {
               <Link href={`/izle/film/${heroItem.id}`}>
                 <button className="flex items-center gap-2 bg-white text-black rounded-lg h-11 px-6 text-[14px] font-semibold hover:bg-white/90 transition-colors">
                   <PlayCircle size={16} />
-                  Simdi Izle
+                  Şimdi İzle
                 </button>
               </Link>
               <Link href={`/film/${heroItem.id}`}>

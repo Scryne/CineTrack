@@ -26,10 +26,18 @@ interface VideoPlayerProps {
     activeSourceId?: string // Mevcut kaynağın ID'si (X-Frame engelleme için)
 }
 
+/** Bu süreden sonra kaynak "yavaş" sayılır: katman çekilir, sonraki kaynak önerilir. */
+const SLOW_SOURCE_MS = 10_000
+
 export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitleUrl, allSourcesFailed, onAddToWatchlist, inWatchlist, activeSourceId }: VideoPlayerProps) {
     const [isLoading, setIsLoading] = useState(true)
     const [hasError, setHasError] = useState(false)
     const [isOffline, setIsOffline] = useState(false)
+    // Kaynak yavaş: kendi yükleme katmanımızı çekip gömülü oynatıcıyı gösteririz ve
+    // "sonraki kaynak" ipucu çıkar. iframe `load` olayı gömülü sayfanın bütün alt kaynakları
+    // (reklam betikleri dahil) inene dek gelmez; katman süresiz kalırsa hazır bir oynatıcıyı
+    // örter, kullanıcı da neden beklediğini bilmez.
+    const [slowHint, setSlowHint] = useState(false)
 
     // Subtitle state
     const [cues, setCues] = useState<SubtitleCue[]>([])
@@ -49,6 +57,7 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
     const handleLoad = useCallback(() => {
         isLoadingRef.current = false
         setIsLoading(false)
+        setSlowHint(false)
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current)
         }
@@ -73,13 +82,23 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
         startLoad(() => {
             setIsLoading(true)
             setHasError(false)
+            setSlowHint(false)
         })
         isLoadingRef.current = true
 
-        // Yüklenme durumunu resetle, timeout kullanma (adblocker'lar yüklenmeyi geciktirebilir)
+        // Kaynak hatalı sayılmaz (adblocker'lar yüklenmeyi geciktirebilir); yalnız katman çekilir
+        // ve kullanıcıya seçenek sunulur.
+        const yavas = setTimeout(() => {
+            if (isLoadingRef.current) {
+                isLoadingRef.current = false
+                setIsLoading(false)
+                setSlowHint(true)
+            }
+        }, SLOW_SOURCE_MS)
         // Reset subtitle timer when embed URL changes
         timerRef.current = 0
         timerStartRef.current = null
+        return () => clearTimeout(yavas)
     }, [embedUrl])
 
     // Fullscreen keyboard shortcut
@@ -279,6 +298,22 @@ export default function VideoPlayer({ embedUrl, title, onError, onLoad, subtitle
             {isLoading && !hasError && !allSourcesFailed && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
                     <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
+                </div>
+            )}
+
+            {slowHint && !hasError && !allSourcesFailed && (
+                <div
+                    role="status"
+                    className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-xl bg-black/85 px-4 py-2 text-sm text-white shadow-lg ring-1 ring-white/10 max-w-[92%]"
+                >
+                    <span>Kaynak geç yanıt veriyor. Görüntü gelmezse sonraki kaynağı dene.</span>
+                    <button
+                        type="button"
+                        onClick={() => onError()}
+                        className="shrink-0 rounded-lg bg-purple px-3 py-1 font-medium hover:bg-purple-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple/60"
+                    >
+                        Sonraki kaynak
+                    </button>
                 </div>
             )}
 

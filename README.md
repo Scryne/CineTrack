@@ -31,7 +31,7 @@
 
 **CineTrack**, film ve dizi tutkunları için geliştirilmiş modern, hızlı ve kullanıcı dostu bir izleme takip uygulamasıdır. TMDB (The Movie Database) API kullanılarak oluşturulan bu proje ile en sevdiğiniz yapımları keşfedebilir, izleme listelerinizi yönetebilir, puanlayabilir ve oyuncular hakkında detaylı bilgilere ulaşabilirsiniz.
 
-Kullanıcı verileri **Supabase** üzerinde güvenli bir şekilde saklanır. E-posta/şifre veya Google OAuth ile giriş yapılır ve tüm veriler hesabınıza bağlı olarak senkronize edilir.
+Varsayılan **yerel mod**da hesap gerekmez: koleksiyon, izleme geçmişi ve puanlar tarayıcıda tutulur (profilde yedek indirme var). **Supabase** modu (`NEXT_PUBLIC_DATA_MODE=supabase`) aynı veriyi hesaba bağlayıp cihazlar arasında eşitler; bunun için kendi Supabase projeniz gerekir.
 
 ---
 
@@ -57,7 +57,7 @@ Kullanıcı verileri **Supabase** üzerinde güvenli bir şekilde saklanır. E-p
 - **Nerede İzlenir?** — TMDB Watch Providers ile hangi platformlarda mevcut olduğunu görün
 
 ### ▶️ İzleme Deneyimi
-- **Yerleşik Video Oynatıcı** — Kapsamlı testlerden geçirilmiş çoklu kaynak desteği, pürüzsüz otomatik failover
+- **Yerleşik Video Oynatıcı** — Dört gömme kaynak (`lib/sources.ts`); erişilemeyen kaynak düğmesi kapanır, geç yanıt veren kaynakta "Sonraki kaynak" önerilir. Kaynakların çalışıp çalışmadığı üçüncü taraf sitelere bağlıdır.
 - **Altyazı Desteği** — OpenSubtitles API entegrasyonu, zamanlama ayarlama
 - **Kaldığın Yerden Devam Et** — İzleme ilerlemesi otomatik kaydedilir
 - **İzleme Geçmişi** — Tüm izleme geçmişinizi görüntüleyin ve yönetin
@@ -91,7 +91,7 @@ Kullanıcı verileri **Supabase** üzerinde güvenli bir şekilde saklanır. E-p
 
 | Katman | Teknoloji |
 |--------|-----------|
-| **Framework** | [Next.js 14](https://nextjs.org/) (App Router) |
+| **Framework** | [Next.js 16](https://nextjs.org/) (App Router), React 19 |
 | **Dil** | [TypeScript 5](https://www.typescriptlang.org/) |
 | **Stil** | [Tailwind CSS 3](https://tailwindcss.com/) |
 | **Auth & Veritabanı** | [Supabase](https://supabase.com/) (Auth + PostgreSQL) |
@@ -108,10 +108,10 @@ Kullanıcı verileri **Supabase** üzerinde güvenli bir şekilde saklanır. E-p
 
 ### Gereksinimler
 
-- [Node.js](https://nodejs.org/) 18+ 
+- [Node.js](https://nodejs.org/) 20.9+ (Next 16 gereği)
 - [npm](https://www.npmjs.com/) veya [yarn](https://yarnpkg.com/)
 - [TMDB API Key](https://www.themoviedb.org/settings/api) (ücretsiz)
-- [Supabase Projesi](https://supabase.com/) (ücretsiz)
+- [Supabase Projesi](https://supabase.com/) (yalnız Supabase modu için; yerel modda gerekmez)
 
 ### Adımlar
 
@@ -244,7 +244,7 @@ CineTrack/
 | API | Amaç | Gereklilik | Ücretsiz |
 |-----|-------|------------|----------|
 | [TMDB](https://www.themoviedb.org/settings/api) | Film/dizi veritabanı | ✅ Zorunlu | ✅ Evet |
-| [Supabase](https://supabase.com/) | Kimlik doğrulama & veritabanı | ✅ Zorunlu | ✅ Evet |
+| [Supabase](https://supabase.com/) | Kimlik doğrulama & veritabanı (Supabase modu) | ⭕ İsteğe bağlı | ✅ Evet |
 | [OMDb](https://www.omdbapi.com/apikey.aspx) | IMDb/Rotten Tomatoes puanları | ⭕ İsteğe bağlı | ✅ Evet |
 | [OpenSubtitles](https://www.opensubtitles.com/en/consumers) | Altyazı desteği | ⭕ İsteğe bağlı | ✅ Evet |
 
