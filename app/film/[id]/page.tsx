@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { FastAverageColor } from "fast-average-color";
 import {
@@ -18,12 +19,15 @@ import {
     Clock,
     Calendar,
     Loader2,
+    Play,
+    PlayCircle,
     MonitorPlay,
     ExternalLink,
 } from "lucide-react";
 import { getMovieDetail, getWatchProviders, posterUrl, backdropUrl, profileUrl, BLUR_PLACEHOLDER } from "@/lib/tmdb";
 import { getRatings } from "@/lib/omdb";
 import {
+    getWatchProgress,
 } from "@/lib/db";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useWatched } from "@/hooks/useWatched";
@@ -34,12 +38,15 @@ import ScrollableRow from "@/components/ui/ScrollableRow";
 import type { TMDBMovieDetail, TMDBCastMember, TMDBVideo } from "@/lib/tmdb";
 import type { TMDBWatchProviders } from "@/lib/tmdb";
 import type { OMDBRatings } from "@/lib/omdb";
+import type { WatchProgress } from "@/types/player";
 
 export default function FilmDetailPage() {
     const params = useParams<{ id: string }>();
+    const router = useRouter();
     const [movie, setMovie] = useState<TMDBMovieDetail | null>(null);
     const [ratings, setRatings] = useState<OMDBRatings | null>(null);
     const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState<WatchProgress | null>(null);
     const [providers, setProviders] = useState<TMDBWatchProviders | null>(null);
     const [dominantColor, setDominantColor] = useState<{ r: number, g: number, b: number } | null>(null);
 
@@ -83,6 +90,14 @@ export default function FilmDetailPage() {
                 }
 
                 try {
+                    // WatchProgress kontrolü
+                    const wp = await getWatchProgress(params.id, "film");
+                    setProgress(wp);
+                } catch (e) {
+                    console.error("Watch progress loading error", e);
+                }
+
+                try {
                     // Watch Providers
                     const wp2 = await getWatchProviders(params.id, "film");
                     setProviders(wp2);
@@ -104,6 +119,11 @@ export default function FilmDetailPage() {
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
         return h > 0 ? `${h}s ${m}dk` : `${m}dk`;
+    };
+
+    const formatDate = (dateStr: string) => {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
     };
 
     const trailer = movie?.videos?.results?.find(
@@ -321,16 +341,29 @@ export default function FilmDetailPage() {
 
                             {/* BUTONLAR */}
                             <div className="flex flex-wrap gap-3 pt-1">
-                                {/* Birincil eylem: yasal izleme seçeneklerine git. Uygulama yayın oynatmaz;
-                                    eski "Şimdi İzle" izinsiz kaynakları gömüyordu (2026-10-31'de kaldırıldı). */}
+                                {/* İZLE BUTONU - En büyük, primary */}
                                 <motion.div whileTap={{ scale: 0.9 }}>
-                                    <a
-                                        href="#nerede-izlenir"
+                                    <button
+                                        onClick={() => router.push(`/izle/film/${params.id}`)}
                                         className="flex items-center gap-3 px-6 py-3.5 bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 group"
                                     >
-                                        <MonitorPlay size={22} className="group-hover:scale-110 transition-transform" />
-                                        <span className="text-base">Nerede izlenir</span>
-                                    </a>
+                                        {progress ? (
+                                            <>
+                                                <PlayCircle size={22} className="group-hover:scale-110 transition-transform" />
+                                                <div className="text-left">
+                                                    <span className="block text-sm font-bold">Kaldığın Yerden Devam Et</span>
+                                                    <span className="block text-[11px] text-white/70 font-normal">
+                                                        Son izleme: {formatDate(progress.updatedAt)}
+                                                    </span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Play size={22} fill="white" className="group-hover:scale-110 transition-transform" />
+                                                <span className="text-base">Şimdi İzle</span>
+                                            </>
+                                        )}
+                                    </button>
                                 </motion.div>
 
                                 <motion.div whileTap={{ scale: 0.9 }}>
@@ -371,12 +404,12 @@ export default function FilmDetailPage() {
             {/* ==========================================
           PLATFORMLARDA İZLE
          ========================================== */}
-            {hasProviders ? (
-                <section id="nerede-izlenir" className="scroll-mt-24 px-4 sm:px-6 lg:px-8" style={{ paddingTop: "20px", paddingBottom: "40px" }}>
+            {hasProviders && (
+                <section className="px-4 sm:px-6 lg:px-8" style={{ paddingTop: "20px", paddingBottom: "40px" }}>
                     <div className="max-w-7xl mx-auto">
                         <div className="flex items-center gap-2 mb-5">
                             <MonitorPlay size={22} className="text-purple-500" />
-                            <h2 className="font-display text-2xl font-bold text-white">Türkiye&apos;de nerede izlenir</h2>
+                            <h2 className="font-display text-2xl font-bold text-white">Platformlarda İzle</h2>
                         </div>
 
                         <div className="flex flex-col gap-6">
@@ -467,19 +500,10 @@ export default function FilmDetailPage() {
                                     className="inline-flex items-center gap-2 text-sm text-purple-500 hover:text-purple-400 transition-colors"
                                 >
                                     <ExternalLink size={14} />
-                                    Tüm seçenekler (JustWatch, TMDB üzerinden)
+                                    Tüm platformları gör (JustWatch)
                                 </a>
                             )}
                         </div>
-                    </div>
-                </section>
-            ) : (
-                <section id="nerede-izlenir" className="scroll-mt-24 px-4 sm:px-6 lg:px-8" style={{ paddingTop: "20px", paddingBottom: "40px" }}>
-                    <div className="max-w-7xl mx-auto rounded-xl border border-border-dim bg-overlay p-5">
-                        <h2 className="font-display text-xl font-bold text-white">Türkiye&apos;de nerede izlenir</h2>
-                        <p className="mt-1 text-sm text-text-sec">
-                            Bu yapım için Türkiye&apos;de abonelik, kiralama ya da satın alma bilgisi yok. Kaynak: JustWatch, TMDB üzerinden.
-                        </p>
                     </div>
                 </section>
             )}

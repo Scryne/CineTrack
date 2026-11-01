@@ -48,7 +48,7 @@ export async function proxy(req: NextRequest) {
     const protectedRoutes = [
         '/koleksiyon', '/dizilerim', '/gecmis',
         '/profil', '/oneriler',
-        '/listeler'
+        '/listeler', '/izle'
     ]
 
     // Check if the route requires authentication

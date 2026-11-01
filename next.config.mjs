@@ -9,6 +9,15 @@ const nextConfig = {
     async headers() {
         return [
             {
+                source: "/izle/:path*",
+                headers: [
+                    {
+                        key: "X-Frame-Options",
+                        value: "SAMEORIGIN",
+                    },
+                ],
+            },
+            {
                 source: "/:path*",
                 headers: [
                     {
@@ -45,17 +54,6 @@ const nextConfig = {
             {
                 source: "/liste",
                 destination: "/koleksiyon",
-                permanent: true,
-            },
-            // Eski oynatıcı rotaları: uygulama yayın oynatmaz, yasal seçeneklere yönlendirir.
-            {
-                source: "/izle/film/:id",
-                destination: "/film/:id#nerede-izlenir",
-                permanent: true,
-            },
-            {
-                source: "/izle/dizi/:id/:sezon/:bolum",
-                destination: "/dizi/:id/sezon/:sezon",
                 permanent: true,
             },
             {

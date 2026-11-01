@@ -15,7 +15,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
             const protectedRoutes = [
                 '/koleksiyon', '/dizilerim', '/gecmis',
                 '/profil', '/oneriler',
-                '/listeler'
+                '/listeler', '/izle'
             ];
 
             const isProtected = protectedRoutes.some(route => pathname?.startsWith(route));
@@ -38,7 +38,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const protectedRoutes = [
         '/koleksiyon', '/dizilerim', '/gecmis',
         '/profil', '/oneriler',
-        '/listeler'
+        '/listeler', '/izle'
     ];
     const isProtected = protectedRoutes.some(route => pathname?.startsWith(route));
     

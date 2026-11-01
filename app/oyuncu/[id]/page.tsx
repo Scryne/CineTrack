@@ -7,7 +7,6 @@ import Link from "next/link";
 import { getPersonDetail, posterUrl, profileUrl, BLUR_PLACEHOLDER } from "@/lib/tmdb";
 import type { TMDBPersonDetail, TMDBPersonCredit } from "@/lib/tmdb";
 import { Film, Tv, Star, User, Cake, MapPin, Play } from "lucide-react";
-import { watchHref } from "@/lib/links";
 
 export default function ActorDetailPage() {
     const params = useParams<{ id: string }>();
@@ -266,7 +265,7 @@ export default function ActorDetailPage() {
                                                     )}
                                                     {/* Play overlay */}
                                                     <Link
-                                                        href={watchHref("film", credit.id)}
+                                                        href={`/izle/film/${credit.id}`}
                                                         onClick={(e) => e.stopPropagation()}
                                                         className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
                                                     >
@@ -346,7 +345,7 @@ export default function ActorDetailPage() {
                                                     )}
                                                     {/* Play overlay */}
                                                     <Link
-                                                        href={watchHref("dizi", credit.id)}
+                                                        href={`/izle/dizi/${credit.id}/1/1`}
                                                         onClick={(e) => e.stopPropagation()}
                                                         className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
                                                     >

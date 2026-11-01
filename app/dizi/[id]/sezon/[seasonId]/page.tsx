@@ -13,13 +13,13 @@ import {
     ChevronRight,
     Loader2,
     RotateCcw,
+    PlayCircle,
 } from "lucide-react";
 import { getSeasonDetail, getSeriesDetail, posterUrl, BLUR_PLACEHOLDER } from "@/lib/tmdb";
 import {
     markEpisodeWatched,
     unmarkEpisodeWatched,
     isEpisodeWatched,
-    saveWatchProgress,
 } from "@/lib/db";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -33,7 +33,6 @@ export default function SeasonDetailPage() {
     const params = useParams<{ id: string; seasonId: string }>();
     const [season, setSeason] = useState<TMDBSeasonDetail | null>(null);
     const [seriesName, setSeriesName] = useState("");
-    const [seriesArt, setSeriesArt] = useState<{ poster: string | null; backdrop: string | null }>({ poster: null, backdrop: null });
     const [loading, setLoading] = useState(true);
     const [watchedMap, setWatchedMap] = useState<Record<string, boolean>>({});
     const [expandedEp, setExpandedEp] = useState<number | null>(null);
@@ -61,10 +60,7 @@ export default function SeasonDetailPage() {
         async function loadData() {
             setLoading(true);
             const seriesData = await getSeriesDetail(params.id);
-            if (seriesData) {
-                setSeriesName(seriesData.name);
-                setSeriesArt({ poster: seriesData.poster_path, backdrop: seriesData.backdrop_path });
-            }
+            if (seriesData) setSeriesName(seriesData.name);
 
             const seasonData = await getSeasonDetail(params.id, seasonNumber);
             setSeason(seasonData);
@@ -79,36 +75,12 @@ export default function SeasonDetailPage() {
         startLoad(refreshWatchedMap);
     }, [refreshWatchedMap]);
 
-    // "Kaldığın yerden devam et": izlenen bölümün ardından gelen bölüm hatırlanır. Eskiden bu
-    // bilgiyi oynatıcı yazıyordu; oynatıcı kalkınca işaretleme yazar.
-    const rememberPosition = async (ep: TMDBEpisode) => {
-        if (!season) return;
-        const next = season.episodes.find((e: TMDBEpisode) => e.episode_number === ep.episode_number + 1);
-        try {
-            await saveWatchProgress({
-                tmdbId: params.id,
-                type: "dizi",
-                title: seriesName,
-                posterPath: seriesArt.poster ?? "",
-                backdropPath: seriesArt.backdrop ?? undefined,
-                season: (next ?? ep).season_number,
-                episode: (next ?? ep).episode_number,
-                episodeTitle: (next ?? ep).name,
-                totalEpisodes: season.episodes.length,
-                updatedAt: new Date().toISOString(),
-            });
-        } catch (err) {
-            console.error("Devam noktası kaydedilemedi:", err);
-        }
-    };
-
     const toggleEpisode = async (ep: TMDBEpisode) => {
         const key = `${ep.season_number}-${ep.episode_number}`;
         if (watchedMap[key]) {
             await unmarkEpisodeWatched(params.id, ep.season_number, ep.episode_number);
         } else {
             await markEpisodeWatched(params.id, ep.season_number, ep.episode_number);
-            await rememberPosition(ep);
             confetti({
                 particleCount: 60,
                 spread: 55,
@@ -365,8 +337,18 @@ export default function SeasonDetailPage() {
                                             )}
                                         </div>
 
-                                        {/* Sağ: izlendi işareti (uygulama yayın oynatmaz) */}
+                                        {/* Sağ: İzle butonu + İşaretleme */}
                                         <div className="flex items-center gap-3 flex-shrink-0 flex-col sm:flex-row justify-center">
+                                            <Link href={`/izle/dizi/${params.id}/${ep.season_number}/${ep.episode_number}`}>
+                                                <motion.button
+                                                    whileTap={{ scale: 0.85 }}
+                                                    whileHover={{ scale: 1.1 }}
+                                                    title="Bölümü İzle"
+                                                    className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-500/10 text-purple-500 hover:bg-purple-500 hover:text-white transition-colors"
+                                                >
+                                                    <PlayCircle size={24} />
+                                                </motion.button>
+                                            </Link>
 
                                             <motion.button
                                                 onClick={() => toggleEpisode(ep)}
