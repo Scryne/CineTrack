@@ -635,7 +635,7 @@ export default function WatchEpisodePage() {
             {/* PROGRESS MODAL */}
             {showProgressModal && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-raised border border-border-dim-dim rounded-2xl p-6 max-w-md w-full animate-fade-in text-center">
+                    <div className="bg-raised border border-border-dim rounded-2xl p-6 max-w-md w-full animate-fade-in text-center">
                         <h3 className="text-xl font-bold font-display text-white mb-2">Kaldığın Yerden Devam Et</h3>
                         <p className="text-text-sec text-sm mb-6">
                             Bu bölümü daha önce izlemeye başlamışsınız. Kaldığınız yerden devam edebilir veya baştan başlayabilirsiniz.

@@ -52,9 +52,5 @@
 - `/api/tmdb` doğrudan TMDB'ye erişemezse genel bir vekile (`api.codetabs.com`) düşüyor; bu durumda istek ve TMDB
   anahtarı üçüncü tarafa gider. Bazı TR ağlarında TMDB engeli için konmuş; kendi vekili ya da yalnız doğrudan erişim
   daha doğru olur.
-- Takvimdeki diğer iki pencere (gün ayrıntısı, bildirim ayarları) hâlâ tanımsız Tailwind sınıfları kullanıyor
-  (`bg-card`, `bg-accent`, `text-muted`, `bg-background`, `modal-backdrop`); panelleri saydam görünebilir. Bu işin
-  kapsamı dışında bırakıldı.
-- `DESIGN.md` "uygulama içinde oynatıcı yok" diyor; oynatıcı 11-01'de geri geldi. Belge ile ürün çelişiyor;
-  karar proje sahibinin.
+- 2026-11-03: 79 tanımsız Tailwind sınıfı (276 kullanım: hata sayfaları, takvim pencereleri, oyuncu sayfası) token'lara bağlandı; oyuncu sayfasındaki iç içe bağlantı ayrıldı. `DESIGN.md` oynatıcı kararıyla uyumlu.
 - Yerel modda veriler yalnız o tarayıcıdadır; tarayıcı verisi temizlenirse kaybolur (profilde yedek var).

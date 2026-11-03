@@ -252,7 +252,7 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
             {/* Arka plan suslemeleri */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple rounded-full blur-[150px]" />
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-dark rounded-full blur-[150px]" />
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-800 rounded-full blur-[150px]" />
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#F59E0B] rounded-full blur-[200px] opacity-10" />
             </div>
 

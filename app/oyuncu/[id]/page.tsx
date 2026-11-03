@@ -8,6 +8,21 @@ import { getPersonDetail, posterUrl, profileUrl, BLUR_PLACEHOLDER } from "@/lib/
 import type { TMDBPersonDetail, TMDBPersonCredit } from "@/lib/tmdb";
 import { Film, Tv, Star, User, Cake, MapPin, Play } from "lucide-react";
 
+const DEPARTMAN: Record<string, string> = {
+    Acting: "Oyuncu",
+    Directing: "Yönetmen",
+    Writing: "Senarist",
+    Production: "Yapımcı",
+    Sound: "Ses",
+    Camera: "Kamera",
+    Editing: "Kurgu",
+    Art: "Sanat",
+    Crew: "Ekip",
+};
+
+const tarihTr = (gun: string) =>
+    new Date(`${gun}T12:00:00`).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+
 export default function ActorDetailPage() {
     const params = useParams<{ id: string }>();
     const [person, setPerson] = useState<TMDBPersonDetail | null>(null);
@@ -120,27 +135,27 @@ export default function ActorDetailPage() {
                         <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3 text-sm text-muted">
                             {person.known_for_department && (
                                 <span className="px-3 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
-                                    {person.known_for_department}
+                                    {DEPARTMAN[person.known_for_department] ?? person.known_for_department}
                                 </span>
                             )}
                             {person.birthday && (
                                 <>
-                                    <span className="w-1 h-1 bg-muted rounded-full hidden sm:block" />
+                                    <span className="w-1 h-1 bg-subtle rounded-full hidden sm:block" />
                                     <span className="flex items-center gap-1">
-                                        <Cake size={14} className="text-text-muted" /> {person.birthday}
+                                        <Cake size={14} className="text-text-muted" /> {tarihTr(person.birthday)}
                                         {age !== null && ` (${age} yaşında)`}
                                     </span>
                                 </>
                             )}
                             {person.deathday && (
                                 <>
-                                    <span className="w-1 h-1 bg-muted rounded-full" />
-                                    <span>{person.deathday}</span>
+                                    <span className="w-1 h-1 bg-subtle rounded-full" />
+                                    <span>{tarihTr(person.deathday)}</span>
                                 </>
                             )}
                             {person.place_of_birth && (
                                 <>
-                                    <span className="w-1 h-1 bg-muted rounded-full hidden sm:block" />
+                                    <span className="w-1 h-1 bg-subtle rounded-full hidden sm:block" />
                                     <span className="flex items-center gap-1"><MapPin size={14} className="text-text-muted" /> {person.place_of_birth}</span>
                                 </>
                             )}
@@ -245,7 +260,8 @@ export default function ActorDetailPage() {
                                     style={{ scrollbarWidth: "none" }}
                                 >
                                     {movies.map((credit: TMDBPersonCredit) => (
-                                        <Link key={`movie-${credit.id}`} href={`/film/${credit.id}`}>
+                                        <div key={`movie-${credit.id}`} className="relative flex-shrink-0">
+                                            <Link href={`/film/${credit.id}`}>
                                             <div className="w-[160px] flex-shrink-0 group cursor-pointer">
                                                 <div className="relative w-[160px] h-[240px] rounded-lg overflow-hidden bg-card mb-2 border border-white/5 group-hover:border-accent/30 transition-colors">
                                                     <Image
@@ -263,16 +279,6 @@ export default function ActorDetailPage() {
                                                             <Star size={10} className="text-yellow-400" /> {credit.vote_average.toFixed(1)}
                                                         </div>
                                                     )}
-                                                    {/* Play overlay */}
-                                                    <Link
-                                                        href={`/izle/film/${credit.id}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-                                                    >
-                                                        <div className="w-12 h-12 rounded-full bg-purple/90 flex items-center justify-center shadow-lg shadow-purple/30 hover:bg-purple transition-colors">
-                                                            <Play size={22} fill="white" className="text-white ml-0.5" />
-                                                        </div>
-                                                    </Link>
                                                     <div className="absolute bottom-2 left-2 right-2">
                                                         <p className="text-xs text-gray-300 truncate">{credit.character}</p>
                                                     </div>
@@ -284,7 +290,17 @@ export default function ActorDetailPage() {
                                                     {credit.release_date?.split("-")[0] || "—"}
                                                 </p>
                                             </div>
-                                        </Link>
+                                            </Link>
+                                                    {/* Play overlay */}
+                                                    <Link
+                                                        href={`/izle/film/${credit.id}`}
+                                                        className="absolute top-0 left-0 w-[160px] h-[240px] rounded-lg flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                                                    >
+                                                        <div className="w-12 h-12 rounded-full bg-purple/90 flex items-center justify-center shadow-lg shadow-purple/30 hover:bg-purple transition-colors">
+                                                            <Play size={22} fill="white" className="text-white ml-0.5" />
+                                                        </div>
+                                                    </Link>
+                                        </div>
                                     ))}
                                 </div>
                             </>
@@ -325,7 +341,8 @@ export default function ActorDetailPage() {
                                     style={{ scrollbarWidth: "none" }}
                                 >
                                     {series.map((credit: TMDBPersonCredit) => (
-                                        <Link key={`tv-${credit.id}`} href={`/dizi/${credit.id}`}>
+                                        <div key={`tv-${credit.id}`} className="relative flex-shrink-0">
+                                            <Link href={`/dizi/${credit.id}`}>
                                             <div className="w-[160px] flex-shrink-0 group cursor-pointer">
                                                 <div className="relative w-[160px] h-[240px] rounded-lg overflow-hidden bg-card mb-2 border border-white/5 group-hover:border-accent/30 transition-colors">
                                                     <Image
@@ -343,16 +360,6 @@ export default function ActorDetailPage() {
                                                             <Star size={10} className="text-yellow-400" /> {credit.vote_average.toFixed(1)}
                                                         </div>
                                                     )}
-                                                    {/* Play overlay */}
-                                                    <Link
-                                                        href={`/izle/dizi/${credit.id}/1/1`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-                                                    >
-                                                        <div className="w-12 h-12 rounded-full bg-purple/90 flex items-center justify-center shadow-lg shadow-purple/30 hover:bg-purple transition-colors">
-                                                            <Play size={22} fill="white" className="text-white ml-0.5" />
-                                                        </div>
-                                                    </Link>
                                                     <div className="absolute bottom-2 left-2 right-2">
                                                         <p className="text-xs text-gray-300 truncate">{credit.character}</p>
                                                     </div>
@@ -364,7 +371,17 @@ export default function ActorDetailPage() {
                                                     {credit.first_air_date?.split("-")[0] || "—"}
                                                 </p>
                                             </div>
-                                        </Link>
+                                            </Link>
+                                                    {/* Play overlay */}
+                                                    <Link
+                                                        href={`/izle/dizi/${credit.id}/1/1`}
+                                                        className="absolute top-0 left-0 w-[160px] h-[240px] rounded-lg flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                                                    >
+                                                        <div className="w-12 h-12 rounded-full bg-purple/90 flex items-center justify-center shadow-lg shadow-purple/30 hover:bg-purple transition-colors">
+                                                            <Play size={22} fill="white" className="text-white ml-0.5" />
+                                                        </div>
+                                                    </Link>
+                                        </div>
                                     ))}
                                 </div>
                             </>

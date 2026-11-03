@@ -32,7 +32,7 @@ export default function ScrollToTop() {
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.2 }}
                     onClick={scrollToTop}
-                    className="fixed bottom-6 right-6 p-3 bg-purple hover:bg-purple-light text-white rounded-full shadow-purple-glow backdrop-blur-sm transition-colors z-50 flex items-center justify-center"
+                    className="fixed bottom-6 right-6 p-3 bg-purple hover:bg-purple-light text-white rounded-full shadow-glow backdrop-blur-sm transition-colors z-50 flex items-center justify-center"
                     aria-label="Yukarı Çık"
                 >
                     <ChevronUp size={22} />

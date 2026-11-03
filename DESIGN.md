@@ -90,5 +90,6 @@ tek mor vurgu, büyük ve sıkışık başlıklar. Uygulama yayın oynatmaz; "iz
 - Do: görseli büyük, metni az tut; puanı ve süreyi sayı olarak, eş aralıklı göster.
 - Do: yasal izleme seçeneklerini ön plana çıkar; atfı gizleme.
 - Don't: ikinci bir vurgu rengi, gradyan metin, büyük harf düğme metni.
-- Don't: uygulama içinde oynatıcı ya da izinsiz yayın kaynağı.
+- Oynatıcı (`/izle`) projenin parçasıdır, proje sahibinin kararıyla kalır (2026-11-01). Yasal seçenekler yine önde gösterilir.
+- Don't: yeni kodda `tailwind.config.ts`'teki "eski adlar" bloğunu kullanmak; o blok yalnız eski bileşenler içindir.
 - Don't: `focus:outline-none` ile odak halkasını kaldırıp yerine bir şey koymamak.

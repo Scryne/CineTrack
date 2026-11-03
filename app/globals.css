@@ -96,3 +96,8 @@
     aspect-ratio: 2/3;
   }
 }
+
+.modal-backdrop {
+  background: rgba(8, 8, 8, 0.72);
+  backdrop-filter: blur(4px);
+}
