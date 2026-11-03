@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  denetim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Derleme gizli anahtar istemez: TMDB/OMDB/OpenSubtitles anahtarları yalnız çalışma anında okunur,
+    # veri modu yerel. Testler fetch'i sahteler; hiçbir adım dış servise gitmez.
+    env:
+      NEXT_PUBLIC_DATA_MODE: local
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      # README: Node 20.9+ (Next 16 gereği). Node 20 bakım süresi bittiğinden güncel LTS (22) kullanılır.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tip denetimi
+        run: npm run typecheck
+
+      - name: Testler (vitest)
+        run: npm test
+
+      - name: Derleme (next build)
+        run: npm run build
