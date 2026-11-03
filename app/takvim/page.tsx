@@ -25,6 +25,7 @@ import type { WatchlistItem } from "@/types";
 import { Tv, CalendarDays, Film, Star, Bell, Inbox } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { startLoad } from "@/lib/utils";
+import NotificationPermissionDialog from "@/components/takvim/NotificationPermissionDialog";
 
 // ==========================================
 // Tipler
@@ -300,6 +301,8 @@ export default function TakvimPage() {
 
         return () => clearInterval(interval);
     }, [notifSettings, notifPermission, weekEpisodes]);
+
+    const dismissNotifModal = useCallback(() => setShowNotifModal(false), []);
 
     const requestPermission = async () => {
         if (typeof Notification === "undefined") return;
@@ -790,35 +793,11 @@ export default function TakvimPage() {
             {/* ==========================================
                 BİLDİRİM İZİN MODALI
             ========================================== */}
-            {showNotifModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 modal-backdrop">
-                    <div className="bg-card border border-white/10 rounded-2xl p-6 max-w-sm w-full animate-slide-up">
-                        <div className="text-center mb-6">
-                            <Bell size={48} className="text-text-muted mb-3" />
-                            <h3 className="text-xl font-bold mb-2">Bildirimleri Aç</h3>
-                            <p className="text-muted text-sm leading-relaxed">
-                                İzleme listenizde bulunan dizilerin yeni bölümlerinden haberdar olmak için
-                                bildirimlere izin verin. Her sabah size hatırlatma göndereceğiz.
-                            </p>
-                        </div>
-
-                        <div className="space-y-2">
-                            <button
-                                onClick={requestPermission}
-                                className="w-full py-3 rounded-xl bg-accent hover:bg-accent-hover text-white font-semibold transition-colors"
-                            >
-                                İzin Ver
-                            </button>
-                            <button
-                                onClick={() => setShowNotifModal(false)}
-                                className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-muted font-medium transition-colors"
-                            >
-                                Şimdi Değil
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <NotificationPermissionDialog
+                open={showNotifModal}
+                onAllow={requestPermission}
+                onDismiss={dismissNotifModal}
+            />
 
             {/* ==========================================
                 BİLDİRİM AYARLARI PANELİ
