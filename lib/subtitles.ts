@@ -1,85 +1,27 @@
 import type { SubtitleSearchParams, SubtitleResult } from '@/types/player'
 import { logger } from './logger'
 
-const API_BASE = 'https://api.opensubtitles.com/api/v1'
-const API_KEY = process.env.NEXT_PUBLIC_OPENSUBTITLES_KEY || ''
-
-const LANGUAGE_MAP: Record<string, string> = {
-    tr: 'Türkçe',
-    en: 'English',
-    de: 'Deutsch',
-    fr: 'Français',
-    es: 'Español',
-    it: 'Italiano',
-    ko: '한국어',
-    ja: '日本語',
-    ar: 'العربية',
-}
-
-function getHeaders() {
-    return {
-        'Api-Key': API_KEY,
-        'Content-Type': 'application/json',
-        'X-User-Agent': 'CineTrack v1.0',
-    }
-}
-
 /**
- * OpenSubtitles API'den altyazı arar.
- * Sonuçları rating ve downloadCount'a göre sıralar.
+ * Altyazı istemcisi. Arama ve indirme sunucu rotasından geçer (app/api/subtitles): tarayıcı
+ * api.opensubtitles.com'a doğrudan gitmez (CORS), anahtar tarayıcıya inmez. Anahtar yoksa ya da
+ * servis yanıt vermezse arama boş liste döner; oynatıcı "altyazı yok" durumunu gösterir.
  */
+const ROUTE = '/api/subtitles'
+
+/** Altyazıları arar. Sonuçlar sunucuda puan ve indirme sayısına göre sıralanır. */
 export async function searchSubtitles(params: SubtitleSearchParams): Promise<SubtitleResult[]> {
     try {
-        if (!API_KEY) return []
+        const query = new URLSearchParams()
+        query.set('tmdb_id', params.tmdbId)
+        query.set('type', params.type)
+        if (params.type === 'dizi' && params.season !== undefined) query.set('season', String(params.season))
+        if (params.type === 'dizi' && params.episode !== undefined) query.set('episode', String(params.episode))
+        if (params.languages?.length) query.set('languages', params.languages.join(','))
 
-        const queryParams = new URLSearchParams()
-        queryParams.set('tmdb_id', params.tmdbId)
-        queryParams.set('type', params.type === 'film' ? 'movie' : 'episode')
-
-        if (params.type === 'dizi' && params.season !== undefined) {
-            queryParams.set('season_number', String(params.season))
-        }
-        if (params.type === 'dizi' && params.episode !== undefined) {
-            queryParams.set('episode_number', String(params.episode))
-        }
-
-        queryParams.set('languages', params.languages?.join(',') || 'tr,en')
-        queryParams.set('order_by', 'download_count')
-
-        const response = await fetch(`${API_BASE}/subtitles?${queryParams.toString()}`, {
-            headers: getHeaders(),
-        })
-
+        const response = await fetch(`${ROUTE}?${query}`)
         if (!response.ok) return []
-
-        const json = await response.json()
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const results: SubtitleResult[] = (json.data || []).map((item: any) => {
-            const attrs = item.attributes || {}
-            const lang = attrs.language || ''
-            return {
-                id: Number(item.id),
-                language: lang,
-                languageName: LANGUAGE_MAP[lang] || lang.toUpperCase(),
-                rating: attrs.ratings || 0,
-                downloadCount: attrs.download_count || 0,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                files: (attrs.files || []).map((f: any) => ({
-                    fileId: f.file_id,
-                    fileName: f.file_name || '',
-                    url: f.url || undefined,
-                })),
-            }
-        })
-
-        // Sort: highest rating first, then highest download count
-        results.sort((a, b) => {
-            if (b.rating !== a.rating) return b.rating - a.rating
-            return b.downloadCount - a.downloadCount
-        })
-
-        return results
+        const json = (await response.json()) as { results?: SubtitleResult[] }
+        return Array.isArray(json.results) ? json.results : []
     } catch (error) {
         logger.error('searchSubtitles error', error)
         return []
@@ -87,45 +29,12 @@ export async function searchSubtitles(params: SubtitleSearchParams): Promise<Sub
 }
 
 /**
- * Bir altyazı dosyası için download URL'i alır.
- * sessionStorage'da cache'ler (download kotası koruması).
+ * Bir altyazı dosyasının indirme adresi. Adres aynı kökendeki sunucu rotasıdır; dosyayı sunucu
+ * OpenSubtitles'tan çeker (indirme bağlantısını sunucu önbellekler, kota korunur).
  */
 export async function getSubtitleDownloadUrl(fileId: number): Promise<string | null> {
-    try {
-        if (!API_KEY) return null
-
-        // Check sessionStorage cache
-        const cacheKey = `subtitle_${fileId}`
-        const cached = sessionStorage.getItem(cacheKey)
-        if (cached) {
-            try {
-                const { url, timestamp } = JSON.parse(cached)
-                if (Date.now() - timestamp < 3 * 60 * 60 * 1000) return url
-            } catch {
-                // Legacy non-JSON cache, ignore
-            }
-        }
-
-        const response = await fetch(`${API_BASE}/download`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ file_id: fileId }),
-        })
-
-        if (!response.ok) return null
-
-        const json = await response.json()
-        const link = json.link || null
-
-        if (link) {
-            sessionStorage.setItem(cacheKey, JSON.stringify({ url: link, timestamp: Date.now() }))
-        }
-
-        return link
-    } catch (error) {
-        logger.error('getSubtitleDownloadUrl error', error)
-        return null
-    }
+    if (!Number.isInteger(fileId) || fileId <= 0) return null
+    return `${ROUTE}?file_id=${fileId}`
 }
 
 /**
