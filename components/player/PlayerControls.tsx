@@ -161,6 +161,11 @@ export default function PlayerControls({
                                         <span>Altyazı Yok</span>
                                         {activeSubtitleId === null && <Check size={16} className="text-purple-500" />}
                                     </button>
+                                    {subtitles.length === 0 && (
+                                        <p className="px-4 py-3 text-sm text-text-sec">
+                                            {isLoadingSubtitles ? 'Altyazılar aranıyor…' : 'Bu yapım için altyazı bulunamadı.'}
+                                        </p>
+                                    )}
                                     {subtitles.map(sub => (
                                         <button
                                             key={sub.id}

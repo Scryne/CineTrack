@@ -58,7 +58,7 @@ Varsayılan **yerel mod**da hesap gerekmez: koleksiyon, izleme geçmişi ve puan
 
 ### ▶️ İzleme Deneyimi
 - **Yerleşik Video Oynatıcı** — Dört gömme kaynak (`lib/sources.ts`); erişilemeyen kaynak düğmesi kapanır, geç yanıt veren kaynakta "Sonraki kaynak" önerilir. Kaynakların çalışıp çalışmadığı üçüncü taraf sitelere bağlıdır.
-- **Altyazı Desteği** — OpenSubtitles API entegrasyonu, zamanlama ayarlama
+- **Altyazı Desteği** — OpenSubtitles; arama ve indirme sunucu rotasından geçer (`app/api/subtitles`), anahtar (`OPENSUBTITLES_KEY`) tarayıcıya inmez. Anahtar yoksa ya da servis yanıt vermezse altyazı listesi "Bu yapım için altyazı bulunamadı" der.
 - **Kaldığın Yerden Devam Et** — İzleme ilerlemesi otomatik kaydedilir
 - **İzleme Geçmişi** — Tüm izleme geçmişinizi görüntüleyin ve yönetin
 - **Reklam Engelleme** — Popup reklamlar otomatik olarak engellenir
@@ -139,7 +139,7 @@ Varsayılan **yerel mod**da hesap gerekmez: koleksiyon, izleme geçmişi ve puan
 
    # İsteğe bağlı
    NEXT_PUBLIC_OMDB_KEY=your_omdb_api_key_here
-   NEXT_PUBLIC_OPENSUBTITLES_KEY=your_opensubtitles_key_here
+   OPENSUBTITLES_KEY=your_opensubtitles_key_here   # yalnız sunucuda okunur
    ```
 
 4. **Geliştirme sunucusunu başlatın:**
@@ -150,6 +150,14 @@ Varsayılan **yerel mod**da hesap gerekmez: koleksiyon, izleme geçmişi ve puan
 5. **Tarayıcınızda açın:**
    
    [http://localhost:3000](http://localhost:3000) adresine gidin.
+
+### Testler ve denetim
+
+```bash
+npm run lint && npm run typecheck && npm test && npm run build
+```
+
+Aynı adımlar her push ve PR'da GitHub Actions'ta çalışır (`.github/workflows/ci.yml`); derleme gizli anahtar istemez.
 
 ### Üretim Derlemesi
 
@@ -218,7 +226,8 @@ CineTrack/
 │   ├── db.ts                   # Supabase veritabanı işlemleri
 │   ├── supabase.ts             # Supabase client (singleton)
 │   ├── sources.ts              # Video kaynak yönetimi & failover
-│   ├── subtitles.ts            # OpenSubtitles API istemcisi
+│   ├── subtitles.ts            # Altyazı istemcisi (/api/subtitles)
+│   ├── subtitlesServer.ts      # OpenSubtitles vekili (yalnız sunucu)
 │   ├── notifications.ts        # Bildirim & hatırlatıcı sistemi
 │   ├── cinema-personality.ts   # Sinema kişiliği analizi
 │   ├── logger.ts               # Loglama yardımcısı
@@ -246,7 +255,7 @@ CineTrack/
 | [TMDB](https://www.themoviedb.org/settings/api) | Film/dizi veritabanı | ✅ Zorunlu | ✅ Evet |
 | [Supabase](https://supabase.com/) | Kimlik doğrulama & veritabanı (Supabase modu) | ⭕ İsteğe bağlı | ✅ Evet |
 | [OMDb](https://www.omdbapi.com/apikey.aspx) | IMDb/Rotten Tomatoes puanları | ⭕ İsteğe bağlı | ✅ Evet |
-| [OpenSubtitles](https://www.opensubtitles.com/en/consumers) | Altyazı desteği | ⭕ İsteğe bağlı | ✅ Evet |
+| [OpenSubtitles](https://www.opensubtitles.com/en/consumers) | Altyazı desteği (`OPENSUBTITLES_KEY`, sunucuda; eski `NEXT_PUBLIC_OPENSUBTITLES_KEY` de okunur) | ⭕ İsteğe bağlı | ✅ Evet |
 
 ---
 
