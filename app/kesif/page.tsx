@@ -31,7 +31,8 @@ import {
     Rocket,
     Zap,
     Flag,
-    Wind
+    Wind,
+    ChevronDown
 } from "lucide-react";
 import {
     DiscoverFilters,
@@ -117,6 +118,8 @@ export default function KesifPage(): React.ReactElement {
 
     const [ratingPill, setRatingPill] = useState<number>(0);
     const [durationPill, setDurationPill] = useState<string>("all");
+    // Dar ekranda süzgeç paneli kapalı başlar: açıkken afiş ızgarasını ekranın altına itiyordu.
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -159,6 +162,7 @@ export default function KesifPage(): React.ReactElement {
 
     const handleApplyFilters = (): void => {
         setFilters({ ...draftFilters, page: 1 });
+        setFiltersOpen(false);
     };
 
     const handleResetFilters = (): void => {
@@ -231,8 +235,27 @@ export default function KesifPage(): React.ReactElement {
             <h1 className="sr-only">Keşfet</h1>
             {/* LEFT PANEL - FILTERS */}
             <aside className="w-full lg:w-[260px] shrink-0">
-                <div className="bg-raised border border-border-dim rounded-xl p-5 lg:sticky lg:top-20 space-y-6 max-h-none lg:max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
-                    <div className="flex items-center gap-2 mb-1">
+                <button
+                    type="button"
+                    onClick={() => setFiltersOpen(open => !open)}
+                    aria-expanded={filtersOpen}
+                    aria-controls="kesif-filtreler"
+                    className="lg:hidden w-full flex items-center gap-2 bg-raised border border-border-dim rounded-xl px-4 h-11 text-[13px] font-semibold text-white"
+                >
+                    <Sliders size={16} className="text-purple-400" />
+                    Filtreler
+                    <ChevronDown size={16} className={cn("ml-auto text-text-muted transition-transform", filtersOpen && "rotate-180")} />
+                </button>
+                {/* Gövde kayar, düğmeler sabit altlıkta: yapışkan düğme çiplerin üstüne binmesin, alt kenar kesilmesin. */}
+                <div
+                    id="kesif-filtreler"
+                    className={cn(
+                        "bg-raised border border-border-dim rounded-xl overflow-hidden flex-col lg:flex lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)]",
+                        filtersOpen ? "flex mt-2 lg:mt-0" : "hidden"
+                    )}
+                >
+                    <div className="p-5 space-y-6 overflow-y-auto no-scrollbar min-h-0 flex-1">
+                    <div className="hidden lg:flex items-center gap-2 mb-1">
                         <Sliders size={16} className="text-purple-400" />
                         <h2 className="text-[14px] font-semibold text-white">Filtreler</h2>
                     </div>
@@ -319,7 +342,7 @@ export default function KesifPage(): React.ReactElement {
                             <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[1.5px]">Süre</h3>
                             <div className="flex flex-wrap gap-1.5">
                                 <button onClick={() => handleDurationPill("all")} className={pillCn(durationPill === "all")}>Tümü</button>
-                                <button onClick={() => handleDurationPill("short")} className={pillCn(durationPill === "short")}>Kisa</button>
+                                <button onClick={() => handleDurationPill("short")} className={pillCn(durationPill === "short")}>Kısa</button>
                                 <button onClick={() => handleDurationPill("normal")} className={pillCn(durationPill === "normal")}>Normal</button>
                                 <button onClick={() => handleDurationPill("long")} className={pillCn(durationPill === "long")}>Uzun</button>
                             </div>
@@ -361,8 +384,10 @@ export default function KesifPage(): React.ReactElement {
                         </div>
                     </div>
 
+                    </div>
+
                     {/* Buttons */}
-                    <div className="pt-2 flex flex-col gap-2 sticky bottom-0 bg-raised z-10">
+                    <div className="px-5 py-4 flex flex-col gap-2 border-t border-border-dim shrink-0">
                         <Button variant="primary" className="w-full justify-center" onClick={handleApplyFilters}>
                             Filtrele
                         </Button>
