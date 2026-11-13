@@ -59,20 +59,20 @@ const GENRE_MAP: Record<number, { name: string; icon: React.ElementType }> = {
     12: { name: "Macera", icon: Map },
     16: { name: "Animasyon", icon: Smile },
     35: { name: "Komedi", icon: Laugh },
-    80: { name: "Suc", icon: ShieldAlert },
+    80: { name: "Suç", icon: ShieldAlert },
     99: { name: "Belgesel", icon: Camera },
     18: { name: "Dram", icon: Theater },
     10751: { name: "Aile", icon: Users },
     14: { name: "Fantastik", icon: Wand2 },
     36: { name: "Tarih", icon: BookOpen },
     27: { name: "Korku", icon: Ghost },
-    10402: { name: "Muzik", icon: Music },
+    10402: { name: "Müzik", icon: Music },
     9648: { name: "Gizem", icon: Search },
     10749: { name: "Romantik", icon: Heart },
     878: { name: "Bilim Kurgu", icon: Rocket },
     53: { name: "Gerilim", icon: Zap },
-    10752: { name: "Savas", icon: Flag },
-    37: { name: "Vahsi Bati", icon: Wind }
+    10752: { name: "Savaş", icon: Flag },
+    37: { name: "Vahşi Batı", icon: Wind }
 };
 
 const GENRE_ENTRIES = Object.entries(GENRE_MAP).map(([id, data]) => ({ id: Number(id), ...data }));
