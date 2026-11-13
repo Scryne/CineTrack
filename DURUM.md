@@ -3,9 +3,26 @@
 > **Ne bu dosya:** sertifika değil **envanter**. Ölçülen gerçek durum; "yok" yazan satır kusur değil, kayıt.
 > Kapanış standardı: `ScryneOS/🎯 100-Command-Center/Kapanis-Standardi.md`
 
-**Ölçüm tarihi:** 2026-11-03
+**Ölçüm tarihi:** 2026-11-13
 **Tek cümle:** Next 16 / React 19 üzerinde, hesapsız yerel modda tam işlevli film-dizi takipçisi ve oynatıcısı
 (`/izle/film/<id>`, `/izle/dizi/<id>/<sezon>/<bölüm>`).
+
+## 2026-11-13 denetimi (ölçüldü)
+
+- **Bağımlılık ve kalite:** vitest 5 + `@types/node` 22 (`1ada2ad`), yazı tipleri `next/font`, rota başına sekme
+  başlığı (`cf6d950`). `tsc` 0, `eslint` 0 hata (1 uyarı `/izle`'de, bilerek), vitest 22/22, `next build` 0.
+  `npm audit`: 7 orta, hepsi `typescript-eslint` → `minimatch` zinciri (lint aracı; yama yalnız minimatch 11'de, üst akım).
+- **Vekil önbelleği:** TMDB/OMDB vekil yanıtlarına `max-age` (`5b7955f`).
+- **Keşfet süzgeci (`61c1dc4`):** 1440'ta yapışkan "Filtrele" düğmesi puan çiplerinin üstüne biniyor, panel altı
+  kesik kalıyordu; gövde kendi içinde kayar, düğmeler ayrı altlıkta. `lg` altında panel "Filtreler" düğmesiyle açılır
+  (önceden tam genişlik açılıp afiş ızgarasını ekranın altına itiyordu). Tür adları Türkçe karakterli (`9b26061`).
+- **Takvim (`54265c9`):** izin penceresi 1440/390'da doğru. Gün ayrıntısı ve bildirim ayarları modalı `template.tsx`'in
+  dönüşümlü kabına hapsolup mobilde üst çubuğun altında kalıyordu; `createPortal` ile `body`'ye taşındı.
+- **Altyazı, gerçek anahtarla:** `/api/subtitles?tmdb_id=155&type=film` 200 + sonuç listesi; `?file_id=…` 200,
+  `text/plain` SRT (134 KB), `cache-control: private, max-age=10800`. Tarayıcı OpenSubtitles'a gitmiyor; CORS yok.
+- **Gezi:** `next start`, 14 rota (ana, koleksiyon, dizilerim, keşfet, geçmiş, takvim, öneriler, profil, auth, film,
+  dizi, sezon, oyuncu, 404) × 390/1440 koyu: taşma 0, konsol 0 (404 rotası beklenen 404). Koleksiyona ekleme
+  uçtan uca: film + dizi ekle → `/koleksiyon` "2 içerik", gezinme rozeti 2. Oynatıcı ve `/izle` bu turda açılmadı.
 
 ## Ne çalışıyor (ölçüldü, 2026-10-31)
 
