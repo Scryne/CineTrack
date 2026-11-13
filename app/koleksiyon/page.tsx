@@ -304,7 +304,7 @@ export default function KoleksiyonPage(): React.ReactElement {
                     ))}
 
                     <span className="text-[12px] text-text-dim ml-2 font-mono tabular-nums">
-                        {activeCount} icerik
+                        {activeCount} içerik
                     </span>
                 </div>
 

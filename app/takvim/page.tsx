@@ -3,6 +3,8 @@
 import { logger } from '@/lib/logger';
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+// Sayfa template.tsx'in dönüşümlü kabında: modal z-50 o yığın bağlamına hapsolup üst çubuğun altında kalıyordu.
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -631,7 +633,7 @@ export default function TakvimPage() {
                     </div>
 
                     {/* Seçili Gün Detayı */}
-                    {selectedDay && (
+                    {selectedDay && createPortal(
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 modal-backdrop"
                             onClick={() => setSelectedDay(null)}>
                             <div
@@ -684,7 +686,8 @@ export default function TakvimPage() {
                                     ))}
                                 </div>
                             </div>
-                        </div>
+                        </div>,
+                        document.body
                     )}
                 </div>
             )}
@@ -802,7 +805,7 @@ export default function TakvimPage() {
             {/* ==========================================
                 BİLDİRİM AYARLARI PANELİ
             ========================================== */}
-            {showSettings && (
+            {showSettings && createPortal(
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 modal-backdrop"
                     onClick={() => setShowSettings(false)}
@@ -925,7 +928,8 @@ export default function TakvimPage() {
                             </p>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
