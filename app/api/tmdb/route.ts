@@ -28,6 +28,10 @@ function isAllowedEndpoint(endpoint: string): boolean {
     return ALLOWED_ENDPOINTS.some((pattern) => pattern.test(endpoint));
 }
 
+// Tarayıcıya da 5 dk taze ömür: yalnız s-maxage + stale-while-revalidate verilince tarayıcı yanıtı hemen bayat
+// sayıp her sayfa açılışında aynı uçlara arka planda yeniden doğrulama isteği atıyordu (2026-11-13 ölçümü).
+const CACHE_CONTROL = 'public, max-age=300, s-maxage=3600, stale-while-revalidate=7200';
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get('endpoint');
@@ -64,7 +68,7 @@ export async function GET(request: NextRequest) {
         if (res.ok) {
             const data = await res.json();
             return NextResponse.json(data, {
-                headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' },
+                headers: { 'Cache-Control': CACHE_CONTROL },
             });
         }
     } catch {
@@ -87,7 +91,7 @@ export async function GET(request: NextRequest) {
 
         const data = await res.json();
         return NextResponse.json(data, {
-            headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' },
+            headers: { 'Cache-Control': CACHE_CONTROL },
         });
     } catch (error) {
         console.error('TMDB proxy fallback error:', error);

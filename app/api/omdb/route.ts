@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
                     metacritic: find('Metacritic'),
                 },
             },
-            { headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800' } }
+            { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800' } }
         );
     } catch {
         return NextResponse.json({ ratings: null });
