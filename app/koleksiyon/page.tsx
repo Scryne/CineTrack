@@ -311,6 +311,7 @@ export default function KoleksiyonPage(): React.ReactElement {
                 {activeTab === "watchlist" && (
                     <div className="relative">
                         <select
+                            aria-label="Sıralama"
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as SortType)}
                             className="appearance-none bg-overlay border border-border-dim hover:border-border-bright rounded-lg h-9 pl-3 pr-8 text-[12px] text-white outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer transition-all"

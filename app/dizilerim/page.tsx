@@ -153,6 +153,7 @@ export default function DizilerimPage(): React.ReactElement {
             transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
             className="max-w-[1400px] mx-auto px-16 py-12 max-lg:px-6 max-md:px-4 max-md:py-8"
         >
+            <h1 className="sr-only">Dizilerim</h1>
             {/* Tab system */}
             <div className="bg-raised border border-border-dim rounded-xl p-1 flex max-w-full gap-1 overflow-x-auto mb-6 sm:inline-flex" role="tablist" aria-label="Dizi durumu">
                 {TABS.map((tab) => {
@@ -194,6 +195,7 @@ export default function DizilerimPage(): React.ReactElement {
                 </span>
                 <div className="relative">
                     <select
+                        aria-label="Sıralama"
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as SortType)}
                         className="appearance-none bg-overlay border border-border-dim hover:border-border-bright rounded-lg h-9 pl-3 pr-8 text-[12px] text-white outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer transition-all"

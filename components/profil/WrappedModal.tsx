@@ -221,7 +221,7 @@ export default function WrappedModal({ isOpen, onClose, stats, username }: Wrapp
                                 {isDownloading ? (
                                     <>
                                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        <span>Olusturuluyor...</span>
+                                        <span>Oluşturuluyor…</span>
                                     </>
                                 ) : (
                                     <>

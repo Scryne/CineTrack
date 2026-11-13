@@ -105,7 +105,7 @@ function StandardRecCard({ item }: { item: ContentItem }) {
 
                 {/* Info Text */}
                 <div className="absolute bottom-0 left-0 right-0 p-3 z-10 flex flex-col justify-end">
-                    <h3 className="font-display font-bold text-sm text-text-primary leading-tight line-clamp-2 mb-1 group-hover:text-purple transition-colors drop-shadow-md">
+                    <h3 className="font-body font-semibold text-sm text-text-primary leading-tight line-clamp-2 mb-1 group-hover:text-purple transition-colors drop-shadow-md">
                         {title}
                     </h3>
                     <div className="flex items-center gap-2 text-xs font-medium text-text-secondary drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
@@ -410,7 +410,7 @@ export default function OnerilerPage() {
                                 <span className="text-text-secondary font-medium font-display animate-pulse">Sürpriz çıkartılıyor...</span>
                             </Card>
                         ) : discoveryItem ? (
-                            <div className="w-full max-w-2xl relative perspective-[1200px]">
+                            <div className="w-full max-w-2xl relative [perspective:1200px]">
                                 <AnimatePresence mode="wait">
                                     <motion.div
                                         key={flipKey}

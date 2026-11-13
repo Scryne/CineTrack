@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Inter } from "next/font/google";
+import { Bebas_Neue, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import ClientSetup from "@/components/ClientSetup";
@@ -7,20 +7,30 @@ import ClientSetup from "@/components/ClientSetup";
 import AuthGuard from "@/components/auth/AuthGuard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
+// Yazı tipleri derlemede indirilip uygulamayla birlikte sunulur (dış CSS isteği yok).
+const bebas = Bebas_Neue({
+  subsets: ["latin", "latin-ext"],
+  weight: "400",
+  variable: "--font-bebas",
+  display: "swap",
 });
 
 const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "CineTrack - Film ve Dizi Takip",
+  title: { default: "CineTrack - Film ve Dizi Takip", template: "%s - CineTrack" },
   description:
     "Filmlerinizi ve dizilerinizi takip edin, izleme listenizi yönetin, bölüm ilerlemelerinizi kaydedin.",
   keywords: ["film", "dizi", "takip", "izleme listesi", "watchlist"],
@@ -48,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" className={`${outfit.variable} ${inter.variable}`}>
+    <html lang="tr" className={`${bebas.variable} ${inter.variable} ${mono.variable}`}>
       <body className="font-body bg-void text-text-pri antialiased min-h-screen flex flex-col">
         <AuthGuard>
           <Navbar />

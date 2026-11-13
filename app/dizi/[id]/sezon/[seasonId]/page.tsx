@@ -288,7 +288,7 @@ export default function SeasonDetailPage() {
                                                 <Badge variant="muted" className="text-[10px] flex-shrink-0">
                                                     S{ep.season_number}E{ep.episode_number}
                                                 </Badge>
-                                                <h3 className="font-display font-bold text-white text-sm sm:text-base leading-tight line-clamp-1">
+                                                <h3 className="font-body font-semibold text-white text-sm sm:text-base leading-tight line-clamp-1">
                                                     {ep.name}
                                                 </h3>
                                             </div>

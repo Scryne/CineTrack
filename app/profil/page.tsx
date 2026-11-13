@@ -144,7 +144,7 @@ function StatCard({ icon: Icon, label, value, color, loading }: {
                 </div>
                 <p className="text-[10px] font-semibold text-text-muted uppercase tracking-[1.5px]">{label}</p>
             </div>
-            <p className="text-3xl font-display font-bold relative z-10" style={{ color }}>
+            <p className="text-3xl font-mono font-medium tabular-nums relative z-10" style={{ color }}>
                 {loading ? <span className="inline-block w-16 h-7 skeleton rounded" /> : <AnimatedCounter value={value} />}
             </p>
         </div>
@@ -373,10 +373,11 @@ export default function ProfilPage(): React.ReactElement {
                             </div>
                         ) : (
                             <div className="flex justify-center md:justify-start items-baseline gap-3 group/title">
-                                <h1 className="text-[28px] font-display font-bold text-white">{profile.username}</h1>
+                                <h1 className="text-[28px] font-display text-white">{profile.username || "İsimsiz izleyici"}</h1>
                                 <button
                                     onClick={() => setIsEditingUsername(true)}
-                                    className="opacity-0 group-hover/title:opacity-100 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-all"
+                                    aria-label="Kullanıcı adını düzenle"
+                                    className="opacity-60 group-hover/title:opacity-100 focus-visible:opacity-100 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-all"
                                 >
                                     <Pencil size={13} />
                                 </button>
@@ -404,7 +405,8 @@ export default function ProfilPage(): React.ReactElement {
                         <button
                             onClick={() => setShowShareCard(true)}
                             disabled={watched.length === 0}
-                            className="bg-white text-black px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-gray-100 transition-all disabled:opacity-40"
+                            title={watched.length === 0 ? "Paylaşım kartı için önce bir yapımı izlendi olarak işaretle" : undefined}
+                            className="bg-purple-500 text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-purple-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <Camera size={15} /> Paylaş
                         </button>
@@ -423,9 +425,9 @@ export default function ProfilPage(): React.ReactElement {
                 ========================================== */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
                 <StatCard icon={Film} label="İzlenen Film" value={totalMovies} color="#7B5CF0" loading={loading} />
-                <StatCard icon={Tv2} label="İzlenen Dizi" value={totalSeries} color="#22C55E" loading={loading} />
-                <StatCard icon={Clock} label="Harcanan Saat" value={detailsLoading ? "..." : runtimeHours} color="#3B82F6" loading={detailsLoading} />
-                <StatCard icon={Star} label="Ortalama Puan" value={avgRating > 0 ? avgRating.toFixed(1) : "—"} color="#F59E0B" loading={false} />
+                <StatCard icon={Tv2} label="İzlenen Dizi" value={totalSeries} color="#9D7FF4" loading={loading} />
+                <StatCard icon={Clock} label="Harcanan Saat" value={detailsLoading ? "..." : runtimeHours} color="#BBA8F8" loading={detailsLoading} />
+                <StatCard icon={Star} label="Ortalama Puan" value={avgRating > 0 ? avgRating.toFixed(1) : "—"} color="#F5C518" loading={false} />
             </section>
 
             {/* ==========================================
@@ -490,7 +492,7 @@ export default function ProfilPage(): React.ReactElement {
                         </div>
                         {watched.length > 8 && (
                             <Link href="/gecmis" className="px-3 py-1.5 bg-overlay hover:bg-subtle rounded-lg text-[11px] font-medium text-text-sec hover:text-white transition-colors flex items-center gap-1">
-                                Tumunu Gor <ChevronRight size={12} />
+                                Tümünü gör <ChevronRight size={12} />
                             </Link>
                         )}
                     </div>
@@ -529,7 +531,7 @@ export default function ProfilPage(): React.ReactElement {
             {/* ==========================================
                 MODALS
                 ========================================== */}
-            <Modal isOpen={showAvatarModal} onClose={() => setShowAvatarModal(false)} title="Profil Karakteri Sec">
+            <Modal isOpen={showAvatarModal} onClose={() => setShowAvatarModal(false)} title="Profil karakteri seç">
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 p-1">
                     {AVATAR_ICONS.map(({ name, icon: IconComponent, color }) => (
                         <button
@@ -572,6 +574,7 @@ export default function ProfilPage(): React.ReactElement {
                                 </div>
                                 <div className="flex items-center gap-1 bg-overlay border border-border-dim rounded-lg px-2 py-1">
                                     <select
+                                        aria-label="Bildirim saati"
                                         value={notifSettings.hour}
                                         onChange={(e) => handleTimeChange("hour", Number(e.target.value))}
                                         className="bg-transparent text-white text-[12px] font-mono focus:outline-none appearance-none cursor-pointer px-1"
@@ -582,6 +585,7 @@ export default function ProfilPage(): React.ReactElement {
                                     </select>
                                     <span className="text-text-muted text-[10px]">:</span>
                                     <select
+                                        aria-label="Bildirim dakikası"
                                         value={notifSettings.minute}
                                         onChange={(e) => handleTimeChange("minute", Number(e.target.value))}
                                         className="bg-transparent text-white text-[12px] font-mono focus:outline-none appearance-none cursor-pointer px-1"

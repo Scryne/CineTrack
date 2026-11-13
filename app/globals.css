@@ -1,16 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --font-bebas: 'Bebas Neue';
-    --font-inter: 'Inter';
-    --font-mono: 'JetBrains Mono';
-  }
-
   * {
     box-sizing: border-box;
     margin: 0;
@@ -61,16 +53,49 @@
     display: none;
   }
 
-  .no-scrollbar {
+  .no-scrollbar,
+  .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Dar liste kaydırması: bölüm ve kaynak seçicileri */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #2C2C32 transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Bebas Neue tek ağırlıklı: tarayıcının sahte kalınlaştırması harfleri bulandırıyor. */
+  .font-display {
+    font-synthesis: none;
   }
 }
 
 @layer components {
 
   /* Shimmer skeleton */
-  .skeleton {
+  .skeleton,
+  .skeleton-shimmer {
     @apply bg-overlay rounded-md;
     background-image: linear-gradient(90deg,
         transparent 0%,
@@ -78,6 +103,11 @@
         transparent 100%);
     background-size: 600px 100%;
     animation: shimmer 1.6s infinite linear;
+  }
+
+  /* Takvimde bugünün yayın noktası */
+  .calendar-pulse {
+    @apply animate-subtle-pulse;
   }
 
   /* Section accent line */

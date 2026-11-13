@@ -228,6 +228,7 @@ export default function KesifPage(): React.ReactElement {
             transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
             className="max-w-[1400px] mx-auto px-16 max-lg:px-6 max-md:px-4 py-12 max-md:py-8 flex flex-col lg:flex-row gap-6 pb-20"
         >
+            <h1 className="sr-only">Keşfet</h1>
             {/* LEFT PANEL - FILTERS */}
             <aside className="w-full lg:w-[260px] shrink-0">
                 <div className="bg-raised border border-border-dim rounded-xl p-5 lg:sticky lg:top-20 space-y-6 max-h-none lg:max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
@@ -294,7 +295,7 @@ export default function KesifPage(): React.ReactElement {
                             />
                             <span className="text-text-muted text-[10px]">—</span>
                             <input
-                                type="number" min="1900" max="2030" placeholder="2024"
+                                type="number" min="1900" max="2030" placeholder="Bu yıl"
                                 className="w-full bg-overlay border border-border-dim rounded-lg px-3 py-2 text-[12px] text-text-pri outline-none focus:border-purple-500 transition-colors"
                                 value={draftFilters.yearTo || ""}
                                 onChange={(e) => setDraftFilters(prev => ({ ...prev, yearTo: e.target.value ? Number(e.target.value) : undefined }))}
@@ -331,6 +332,7 @@ export default function KesifPage(): React.ReactElement {
                             <label className="text-[10px] font-semibold text-text-muted uppercase tracking-[1.5px]">Sıralama</label>
                             <select
                                 className="w-full bg-overlay border border-border-dim rounded-lg p-2.5 text-[12px] text-text-sec outline-none focus:border-purple-500 cursor-pointer"
+                                aria-label="Sıralama"
                                 value={draftFilters.sortBy}
                                 onChange={(e) => setDraftFilters(prev => ({ ...prev, sortBy: e.target.value as DiscoverFilters['sortBy'] }))}
                             >
@@ -344,16 +346,17 @@ export default function KesifPage(): React.ReactElement {
                             <label className="text-[10px] font-semibold text-text-muted uppercase tracking-[1.5px]">Dil</label>
                             <select
                                 className="w-full bg-overlay border border-border-dim rounded-lg p-2.5 text-[12px] text-text-sec outline-none focus:border-purple-500 cursor-pointer"
+                                aria-label="Dil"
                                 value={draftFilters.language || ""}
                                 onChange={(e) => setDraftFilters(prev => ({ ...prev, language: e.target.value }))}
                             >
                                 <option value="">Tüm Diller</option>
-                                <option value="tr">Turkce</option>
-                                <option value="en">Ingilizce</option>
+                                <option value="tr">Türkçe</option>
+                                <option value="en">İngilizce</option>
                                 <option value="ko">Korece</option>
                                 <option value="ja">Japonca</option>
-                                <option value="es">Ispanyolca</option>
-                                <option value="fr">Fransizca</option>
+                                <option value="es">İspanyolca</option>
+                                <option value="fr">Fransızca</option>
                             </select>
                         </div>
                     </div>
@@ -383,12 +386,16 @@ export default function KesifPage(): React.ReactElement {
                     <div className="flex items-center gap-1 bg-overlay p-0.5 rounded-lg">
                         <button
                             onClick={() => setViewMode("grid")}
+                            aria-label="Izgara görünümü"
+                            aria-pressed={viewMode === "grid"}
                             className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-raised text-purple-400 border border-border-mid" : "text-text-muted hover:text-text-sec")}
                         >
                             <LayoutGrid size={15} />
                         </button>
                         <button
                             onClick={() => setViewMode("list")}
+                            aria-label="Liste görünümü"
+                            aria-pressed={viewMode === "list"}
                             className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-raised text-purple-400 border border-border-mid" : "text-text-muted hover:text-text-sec")}
                         >
                             <List size={15} />
@@ -416,7 +423,7 @@ export default function KesifPage(): React.ReactElement {
                             const rating = item.vote_average?.toFixed(1) || "0.0";
                             const date = 'release_date' in item ? item.release_date : item.first_air_date;
                             const year = date ? date.split("-")[0] : "TBA";
-                            const overview = item.overview || "Aciklama bulunmuyor.";
+                            const overview = item.overview || "Açıklama bulunmuyor.";
 
                             if (viewMode === "grid") {
                                 return (
@@ -492,7 +499,7 @@ export default function KesifPage(): React.ReactElement {
                         )}
                         {!loadingMore && filters.page && filters.page * 20 < totalResults && (
                             <Button variant="ghost" onClick={() => setFilters(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}>
-                                Daha Fazla Yukle
+                                Daha fazla yükle
                             </Button>
                         )}
                     </div>

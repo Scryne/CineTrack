@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "İzle - CineTrack",
+    title: "İzle",
 };
 
 export default function WatchLayout({

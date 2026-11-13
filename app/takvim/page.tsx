@@ -885,6 +885,7 @@ export default function TakvimPage() {
                             </label>
                             <div className="flex items-center gap-2">
                                 <select
+                                    aria-label="Bildirim saati"
                                     value={notifSettings.hour}
                                     onChange={(e) => {
                                         const hour = Number(e.target.value);
@@ -902,6 +903,7 @@ export default function TakvimPage() {
                                 </select>
                                 <span className="text-muted font-bold">:</span>
                                 <select
+                                    aria-label="Bildirim dakikası"
                                     value={notifSettings.minute}
                                     onChange={(e) => {
                                         const minute = Number(e.target.value);

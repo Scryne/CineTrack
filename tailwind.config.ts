@@ -21,8 +21,8 @@ const config: Config = {
         'purple-300': '#BBA8F8',
         'text-pri': '#F2F2F7',
         'text-sec': '#9494A0',
-        'text-muted': '#55555F',
-        'text-dim': '#35353D',
+        'text-muted': '#8A8A95',
+        'text-dim': '#80808B',
         'ok': '#34D399',
         'warn': '#FBBF24',
         'err': '#F87171',
@@ -78,10 +78,31 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'slide-up': {
+          from: { opacity: '0', transform: 'translateY(16px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'subtle-pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.55' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-6px)' },
+        },
       },
       animation: {
         shimmer: 'shimmer 1.6s infinite linear',
         'count-up': 'count-up 0.4s ease-out forwards',
+        'fade-in': 'fade-in 0.2s ease-out both',
+        'slide-up': 'slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'page-enter': 'fade-in 0.25s ease-out both',
+        'subtle-pulse': 'subtle-pulse 2s ease-in-out infinite',
+        float: 'float 4s ease-in-out infinite',
       },
       transitionTimingFunction: {
         smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',

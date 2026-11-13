@@ -18,7 +18,7 @@ colors:
   primary-deep: "#130B2E"
   text-pri: "#F2F2F7"
   text-sec: "#9494A0"
-  text-muted: "#55555F"
+  text-muted: "#8A8A95"
   rating: "#F5C518"
   ok: "#34D399"
   warn: "#FBBF24"
@@ -41,8 +41,8 @@ rounded:
 
 CineTrack kişisel bir sinema arşividir: izleme listesi, izlenenler, bölüm takibi, puan ve "nerede izlenir".
 Arayüzün yıldızı afiş ve sahne görselleridir; kabuk geri çekilir. Ton gece seansı: neredeyse siyah zemin,
-tek mor vurgu, büyük ve sıkışık başlıklar. Uygulama yayın oynatmaz; "izle" eylemleri yasal seçeneklere
-(TMDB/JustWatch sağlayıcıları) ve bölüm takibine gider.
+tek mor vurgu, büyük ve sıkışık başlıklar. Detay sayfasında yasal seçenekler (TMDB/JustWatch sağlayıcıları)
+önde durur; "Şimdi İzle" projenin kendi oynatıcısını (`/izle`) açar ve bölüm takibine bağlanır.
 
 ## Colors
 
@@ -52,8 +52,8 @@ tek mor vurgu, büyük ve sıkışık başlıklar. Uygulama yayın oynatmaz; "iz
   eklenmez.
 - `rating` (sarı) yalnız puan yıldızlarında ve IMDb puanında. Durum renkleri (`ok`, `warn`, `err`) yalnız
   durum içindir; `err` ayrıca yıkıcı eylemin rengidir (silme, çıkış).
-- Metin: başlık ve gövde `text-pri`, ikincil `text-sec`, yardımcı ve etiket `text-muted`. `text-muted` küçük
-  metinde koyu zeminde kontrast sınırında olduğundan uzun cümlede kullanılmaz.
+- Metin: başlık ve gövde `text-pri`, ikincil `text-sec`, yardımcı ve etiket `text-muted`. `text-muted` en az
+  4,5:1 sağlar (axe ile ölçüldü, 2026-11-04; eski #55555F 2,7:1 idi).
 
 ## Typography
 

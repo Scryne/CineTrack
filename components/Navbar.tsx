@@ -309,7 +309,7 @@ export default function Navbar(): React.ReactElement | null {
                     <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-text-sec hover:text-text-pri hover:bg-overlay transition-colors"
-                        aria-label="Menu"
+                        aria-label="Menü"
                     >
                         {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
                     </button>
