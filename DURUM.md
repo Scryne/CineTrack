@@ -3,9 +3,19 @@
 > **Ne bu dosya:** sertifika değil **envanter**. Ölçülen gerçek durum; "yok" yazan satır kusur değil, kayıt.
 > Kapanış standardı: `ScryneOS/🎯 100-Command-Center/Kapanis-Standardi.md`
 
-**Ölçüm tarihi:** 2026-11-13
+**Ölçüm tarihi:** 2026-11-16 (önceki: 2026-11-13)
 **Tek cümle:** Next 16 / React 19 üzerinde, hesapsız yerel modda tam işlevli film-dizi takipçisi ve oynatıcısı
 (`/izle/film/<id>`, `/izle/dizi/<id>/<sezon>/<bölüm>`).
+
+## 2026-11-16: oynatıcı kontrolü
+
+- `next build` + `next start`, gerçek Chrome: `/izle/film/603` (1440) ve `/izle/dizi/1399/1/1` (390) açılıyor; kaynak
+  iframe'i (`autoembed.co`) yükleniyor, 4 kaynak düğmesi, altyazı seçici, bölüm listesi ve "Sonraki Bölüm" yerinde,
+  yatay taşma yok. Konsoldaki 4 hata gömülen üçüncü taraf sayfasından (sertifika, DNS, çerçeve gezinme engeli),
+  uygulamadan değil. Oynatılan videonun kendisi bu makineden doğrulanamaz (kaynaklar üçüncü taraf).
+- **Vekil kararı:** `/api/tmdb` önce TMDB'ye doğrudan gider, ISS engelinde (4 sn) codetabs yedeğine düşer; böyle
+  kalıyor (sunucu yurt dışındaysa yedek hiç devreye girmez). OMDB anahtarı 401 veriyor: yeni anahtar Scryne'ın hesabından alınır (dış iş); OMDB yalnız ek puanlar
+  için, sayfalar onsuz da açılıyor.
 
 ## 2026-11-13 denetimi (ölçüldü)
 
