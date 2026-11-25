@@ -3,7 +3,37 @@
 > **Ne bu dosya:** sertifika değil **envanter**. Ölçülen gerçek durum; "yok" yazan satır kusur değil, kayıt.
 > Kapanış standardı: `ScryneOS/🎯 100-Command-Center/Kapanis-Standardi.md`
 
-**Ölçüm tarihi:** 2026-11-16 (önceki: 2026-11-13)
+**Ölçüm tarihi:** 2026-11-25 (yayına hazır turu; önceki: 2026-11-16)
+
+**Yayına hazır karnesi (2026-11-25):** Kod ✅ · Ürün ✅ · Ön yüz ✅ (vitrin: cila) · Belge ✅ · Kapı: ağaç temiz, geçmişte
+`73b026f` (11-03 `gh pr merge`) gerçek e-posta kimliği; geçmişi yeniden yazma kararı Scryne'da · Dış: OMDB anahtarı.
+Bitiş çizgisi ScryneOS `🎯 100-Command-Center/Yayina-Hazir-Karnesi.md`; bundan sonra bulunan "v2 fikirleri"ne girer.
+
+## 2026-11-25 ölçümü
+
+- **Kod:** `tsc` 0, `eslint` 0 hata, vitest 22/22, `next build` 0. `npm audit --omit=dev`: next 16.4.3'teki orta açık →
+  16.4.6 (`eslint-config-next` aynı), 0.
+- **Gezi (gerçek TMDB verisi, `next start`):** 12 rota (ana sayfa, keşfet, film, dizi, oyuncu, takvim, koleksiyon,
+  dizilerim, geçmiş, öneriler, profil, oynatıcı) × 390/1440 × 2 tema = 48 kare; taşma 0. Oynatıcıdaki 4 hata gömülen
+  üçüncü taraf kaynağın sertifikası (`smashy.stream`), uygulamanın değil.
+- **Uçtan uca:** Matrix sayfasında "Koleksiyona Ekle" → düğme durumu değişti, `/koleksiyon`'da görünüyor; sayfa hatası 0.
+  Geçmiş sayfası oynatıcı ilerlemesini listeler, "İzledim" işaretini değil (tasarım).
+- **Cila (`ac682ff`):** oy almamış yapımlar (ör. Avengers: Doomsday, 2026) ana sayfa vitrininde, film/dizi kartlarında,
+  Keşfet'te ve takvimde "★ 0.0" gösteriyordu; kötü puan gibi okunuyordu. ContentCard'ın kuralı (puan > 0) her yere
+  uygulandı; ana sayfada "0.0" sayısı 0. Telefonda alttaki kartların boş görünmesi tam sayfa çekimde tembel yüklemeden:
+  sayfa kaydırılınca 80 görselin hiçbiri kırık değil.
+
+## Dış adımlar
+
+- OMDB anahtarı (401): Scryne'ın hesabından yeni anahtar; yalnız ek puanlar için, sayfalar onsuz çalışıyor.
+
+## v2 fikirleri
+
+- Geçmiş sayfasında "İzledim" işaretlerini de göstermek (şu an yalnız oynatıcı ilerlemesi).
+
+---
+
+**Önceki ölçüm: 2026-11-16**
 **Tek cümle:** Next 16 / React 19 üzerinde, hesapsız yerel modda tam işlevli film-dizi takipçisi ve oynatıcısı
 (`/izle/film/<id>`, `/izle/dizi/<id>/<sezon>/<bölüm>`).
 
