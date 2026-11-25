@@ -356,9 +356,14 @@ export default function Home(): React.ReactElement {
               variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
               className="flex items-center gap-2 text-[13px] text-white/50 mt-2"
             >
-              <Star size={13} className="fill-warn text-warn" />
-              <span className="text-warn font-mono">{heroItem.vote_average?.toFixed(1)}</span>
-              <span>·</span>
+              {/* Oy yoksa (henüz çıkmamış yapım) puan gösterilmez: "0.0" kötü puan gibi okunuyordu */}
+              {(heroItem.vote_average ?? 0) > 0 && (
+                <>
+                  <Star size={13} className="fill-warn text-warn" />
+                  <span className="text-warn font-mono">{heroItem.vote_average.toFixed(1)}</span>
+                  <span>·</span>
+                </>
+              )}
               <span>{heroItem.release_date?.split("-")[0]}</span>
             </motion.div>
 

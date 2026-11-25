@@ -734,12 +734,14 @@ export default function TakvimPage() {
                                                 <p className="text-sm font-semibold truncate group-hover:text-accent transition-colors">
                                                     {movie.title}
                                                 </p>
-                                                <div className="flex items-center gap-1 mt-1">
-                                                    <Star size={10} className="text-yellow-400" />
-                                                    <span className="text-xs text-muted">
-                                                        {movie.vote_average.toFixed(1)}
-                                                    </span>
-                                                </div>
+                                                {movie.vote_average > 0 && (
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <Star size={10} className="text-yellow-400" />
+                                                        <span className="text-xs text-muted">
+                                                            {movie.vote_average.toFixed(1)}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </Link>

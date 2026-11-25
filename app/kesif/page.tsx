@@ -445,7 +445,8 @@ export default function KesifPage(): React.ReactElement {
                         {results.map((item) => {
                             const linkHref = `/${contentType === "movie" ? "film" : "dizi"}/${item.id}`;
                             const title = 'title' in item ? item.title : item.name;
-                            const rating = item.vote_average?.toFixed(1) || "0.0";
+                            // Oy yoksa (henüz çıkmamış yapım) puan gösterilmez: "0.0" kötü puan gibi okunuyordu.
+                            const rating = (item.vote_average ?? 0) > 0 ? item.vote_average.toFixed(1) : null;
                             const date = 'release_date' in item ? item.release_date : item.first_air_date;
                             const year = date ? date.split("-")[0] : "TBA";
                             const overview = item.overview || "Açıklama bulunmuyor.";
@@ -461,10 +462,12 @@ export default function KesifPage(): React.ReactElement {
                                             )}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
-                                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur px-1.5 py-0.5 rounded-md flex items-center gap-1 text-[10px] font-mono">
-                                                <Star size={10} className="text-warn fill-warn" />
-                                                <span className="text-white">{rating}</span>
-                                            </div>
+                                            {rating && (
+                                                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur px-1.5 py-0.5 rounded-md flex items-center gap-1 text-[10px] font-mono">
+                                                    <Star size={10} className="text-warn fill-warn" />
+                                                    <span className="text-white">{rating}</span>
+                                                </div>
+                                            )}
 
                                             <div className="absolute bottom-0 left-0 right-0 p-3">
                                                 <h3 className="text-[13px] font-semibold text-white leading-tight line-clamp-2 mb-0.5 group-hover:text-purple-300 transition-colors">{title}</h3>
@@ -488,10 +491,12 @@ export default function KesifPage(): React.ReactElement {
                                                 <div>
                                                     <h3 className="text-[15px] font-semibold text-white mb-1 truncate group-hover:text-purple-300 transition-colors">{title}</h3>
                                                     <div className="flex items-center gap-3 mb-2 text-[12px] text-text-sec">
-                                                        <div className="flex items-center gap-1">
-                                                            <Star size={12} className="text-warn fill-warn" />
-                                                            <span className="font-mono">{rating}</span>
-                                                        </div>
+                                                        {rating && (
+                                                            <div className="flex items-center gap-1">
+                                                                <Star size={12} className="text-warn fill-warn" />
+                                                                <span className="font-mono">{rating}</span>
+                                                            </div>
+                                                        )}
                                                         <div className="flex items-center gap-1">
                                                             <Calendar size={12} className="text-text-muted" />
                                                             <span>{year}</span>
